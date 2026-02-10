@@ -3,6 +3,7 @@ package services
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Creeper19472/playground/internal/models"
@@ -148,15 +149,11 @@ func TestWriteCredentialsToFile(t *testing.T) {
 	}
 
 	// Check that username and password are in the file
-	if !contains(contentStr, username) {
+	if !strings.Contains(contentStr, username) {
 		t.Error("Username not found in credentials file")
 	}
 
-	if !contains(contentStr, password) {
+	if !strings.Contains(contentStr, password) {
 		t.Error("Password not found in credentials file")
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
 }

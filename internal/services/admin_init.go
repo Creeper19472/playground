@@ -12,6 +12,11 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// CredentialsTimestampFormat is the format used for timestamps in the credentials file
+	CredentialsTimestampFormat = "2006-01-02 15:04:05 MST"
+)
+
 // AdminInitializer handles the creation of the initial admin account
 type AdminInitializer struct {
 	db *gorm.DB
@@ -114,7 +119,7 @@ POST /api/v1/auth/change-password
   "confirm_password": "<new>"
 }
 
-`, time.Now().Format("2006-01-02 15:04:05 MST"), username, password)
+`, time.Now().Format(CredentialsTimestampFormat), username, password)
 	
 	// Write file with restrictive permissions (owner read/write only)
 	if err := os.WriteFile(filePath, []byte(content), 0600); err != nil {
