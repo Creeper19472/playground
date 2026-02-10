@@ -23,9 +23,9 @@ func NewMessageHandler(messageService *services.MessageService, hub *ws.Hub) *Me
 }
 
 type CreateMessageRequest struct {
-	UserID  int64  `json:"user_id"`
+	UserID  uint  `json:"user_id"`
 	Content string `json:"content"`
-	IssueID *int64 `json:"issue_id,omitempty"`
+	IssueID *uint `json:"issue_id,omitempty"`
 }
 
 func (h *MessageHandler) CreateMessage(w http.ResponseWriter, r *http.Request) {
@@ -50,13 +50,13 @@ func (h *MessageHandler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 
 func (h *MessageHandler) GetMessage(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	id, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		http.Error(w, "Invalid message ID", http.StatusBadRequest)
 		return
 	}
 
-	message, err := h.messageService.GetMessageByID(id)
+	message, err := h.messageService.GetMessageByID(uint(id))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -70,14 +70,15 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 	issueIDStr := r.URL.Query().Get("issue_id")
 	limitStr := r.URL.Query().Get("limit")
 
-	var issueID *int64
+	var issueID *uint
 	if issueIDStr != "" {
-		id, err := strconv.ParseInt(issueIDStr, 10, 64)
+		id, err := strconv.ParseUint(issueIDStr, 10, 32)
 		if err != nil {
 			http.Error(w, "Invalid issue ID", http.StatusBadRequest)
 			return
 		}
-		issueID = &id
+		uid := uint(id)
+		issueID = &uid
 	}
 
 	limit := 100

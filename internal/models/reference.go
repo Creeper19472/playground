@@ -1,14 +1,21 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // Reference represents a reference/link to support an argument
 type Reference struct {
-	ID          int64     `json:"id" db:"id"`
-	UserID      int64     `json:"user_id" db:"user_id"`
-	IssueID     int64     `json:"issue_id" db:"issue_id"`
-	URL         string    `json:"url" db:"url"`
-	Title       string    `json:"title" db:"title"`
-	Description string    `json:"description" db:"description"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	ID          uint           `json:"id" gorm:"primaryKey"`
+	UserID      uint           `json:"user_id" gorm:"not null;index"`
+	User        User           `json:"-" gorm:"foreignKey:UserID"`
+	IssueID     uint           `json:"issue_id" gorm:"not null;index"`
+	Issue       Issue          `json:"-" gorm:"foreignKey:IssueID"`
+	URL         string         `json:"url" gorm:"not null"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	CreatedAt   time.Time      `json:"created_at" gorm:"autoCreateTime"`
+	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
 }

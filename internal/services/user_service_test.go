@@ -1,31 +1,23 @@
 package services
 
 import (
-	"database/sql"
 	"os"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/Creeper19472/playground/internal/models"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-func setupTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+func setupTestDB(t *testing.T) *gorm.DB {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to create test database: %v", err)
 	}
 
-	// Create schema
-	schema := `
-	CREATE TABLE users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT UNIQUE NOT NULL,
-		email TEXT UNIQUE NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-	`
-	if _, err := db.Exec(schema); err != nil {
-		t.Fatalf("Failed to create schema: %v", err)
+	// Auto migrate the schema
+	if err := db.AutoMigrate(&models.User{}); err != nil {
+		t.Fatalf("Failed to migrate schema: %v", err)
 	}
 
 	return db
@@ -33,7 +25,8 @@ func setupTestDB(t *testing.T) *sql.DB {
 
 func TestUserService_CreateUser(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
 
 	service := NewUserService(db)
 
@@ -57,7 +50,8 @@ func TestUserService_CreateUser(t *testing.T) {
 
 func TestUserService_GetUserByID(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
 
 	service := NewUserService(db)
 
@@ -84,7 +78,8 @@ func TestUserService_GetUserByID(t *testing.T) {
 
 func TestUserService_ListUsers(t *testing.T) {
 	db := setupTestDB(t)
-	defer db.Close()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
 
 	service := NewUserService(db)
 

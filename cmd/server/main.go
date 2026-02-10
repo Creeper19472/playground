@@ -24,8 +24,8 @@ func main() {
 	}
 	defer database.Close()
 
-	if err := database.InitSchema(); err != nil {
-		log.Fatalf("Failed to initialize schema: %v", err)
+	if err := database.AutoMigrate(); err != nil {
+		log.Fatalf("Failed to auto migrate: %v", err)
 	}
 
 	// Initialize WebSocket hub

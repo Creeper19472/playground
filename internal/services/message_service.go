@@ -1,94 +1,65 @@
 package services
 
 import (
-	"database/sql"
 	"fmt"
 
 	"github.com/Creeper19472/playground/internal/models"
+	"gorm.io/gorm"
 )
 
 type MessageService struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
-func NewMessageService(db *sql.DB) *MessageService {
+func NewMessageService(db *gorm.DB) *MessageService {
 	return &MessageService{db: db}
 }
 
 // CreateMessage creates a new message
-func (s *MessageService) CreateMessage(userID int64, content string, issueID *int64) (*models.Message, error) {
-	result, err := s.db.Exec(
-		"INSERT INTO messages (user_id, content, issue_id) VALUES (?, ?, ?)",
-		userID, content, issueID,
-	)
-	if err != nil {
+func (s *MessageService) CreateMessage(userID uint, content string, issueID *uint) (*models.Message, error) {
+	message := &models.Message{
+		UserID:  userID,
+		Content: content,
+		IssueID: issueID,
+	}
+	
+	if err := s.db.Create(message).Error; err != nil {
 		return nil, fmt.Errorf("failed to create message: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get message ID: %w", err)
-	}
-
-	return s.GetMessageByID(id)
+	return s.GetMessageByID(message.ID)
 }
 
-// GetMessageByID retrieves a message by ID
-func (s *MessageService) GetMessageByID(id int64) (*models.Message, error) {
-	message := &models.Message{}
-	err := s.db.QueryRow(`
-		SELECT m.id, m.user_id, u.username, m.content, m.issue_id, m.created_at
-		FROM messages m
-		JOIN users u ON m.user_id = u.id
-		WHERE m.id = ?`,
-		id,
-	).Scan(&message.ID, &message.UserID, &message.Username, &message.Content, &message.IssueID, &message.CreatedAt)
-
-	if err != nil {
+// GetMessageByID retrieves a message by ID with user information
+func (s *MessageService) GetMessageByID(id uint) (*models.Message, error) {
+	var message models.Message
+	if err := s.db.Preload("User").First(&message, id).Error; err != nil {
 		return nil, fmt.Errorf("failed to get message: %w", err)
 	}
-	return message, nil
+	
+	// Set username from loaded User
+	message.Username = message.User.Username
+	
+	return &message, nil
 }
 
 // ListMessages retrieves all messages (optionally filtered by issue)
-func (s *MessageService) ListMessages(issueID *int64, limit int) ([]*models.Message, error) {
-	var rows *sql.Rows
-	var err error
-
+func (s *MessageService) ListMessages(issueID *uint, limit int) ([]*models.Message, error) {
+	var messages []*models.Message
+	query := s.db.Preload("User").Order("created_at DESC")
+	
 	if issueID != nil {
-		rows, err = s.db.Query(`
-			SELECT m.id, m.user_id, u.username, m.content, m.issue_id, m.created_at
-			FROM messages m
-			JOIN users u ON m.user_id = u.id
-			WHERE m.issue_id = ?
-			ORDER BY m.created_at DESC
-			LIMIT ?`,
-			issueID, limit,
-		)
-	} else {
-		rows, err = s.db.Query(`
-			SELECT m.id, m.user_id, u.username, m.content, m.issue_id, m.created_at
-			FROM messages m
-			JOIN users u ON m.user_id = u.id
-			ORDER BY m.created_at DESC
-			LIMIT ?`,
-			limit,
-		)
+		query = query.Where("issue_id = ?", *issueID)
 	}
-
-	if err != nil {
+	
+	if err := query.Limit(limit).Find(&messages).Error; err != nil {
 		return nil, fmt.Errorf("failed to list messages: %w", err)
 	}
-	defer rows.Close()
-
-	var messages []*models.Message
-	for rows.Next() {
-		message := &models.Message{}
-		if err := rows.Scan(&message.ID, &message.UserID, &message.Username, &message.Content, &message.IssueID, &message.CreatedAt); err != nil {
-			return nil, fmt.Errorf("failed to scan message: %w", err)
-		}
-		messages = append(messages, message)
+	
+	// Set usernames from loaded Users
+	for _, message := range messages {
+		message.Username = message.User.Username
 	}
-
+	
 	return messages, nil
 }

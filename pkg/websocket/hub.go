@@ -11,7 +11,7 @@ import (
 // Client represents a connected WebSocket client
 type Client struct {
 	ID       string
-	UserID   int64
+	UserID   uint
 	Username string
 	Conn     *websocket.Conn
 	Hub      *Hub

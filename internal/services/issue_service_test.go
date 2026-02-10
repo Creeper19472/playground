@@ -1,62 +1,35 @@
 package services
 
 import (
-	"database/sql"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/Creeper19472/playground/internal/models"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-func setupIssueTestDB(t *testing.T) *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
+func setupIssueTestDB(t *testing.T) *gorm.DB {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to create test database: %v", err)
 	}
 
-	// Create schema
-	schema := `
-	CREATE TABLE users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		username TEXT UNIQUE NOT NULL,
-		email TEXT UNIQUE NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE issues (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		user_id INTEGER NOT NULL,
-		summary TEXT NOT NULL,
-		description TEXT,
-		vote_count INTEGER DEFAULT 0,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (user_id) REFERENCES users(id)
-	);
-
-	CREATE TABLE votes (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		user_id INTEGER NOT NULL,
-		issue_id INTEGER NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		UNIQUE(user_id, issue_id),
-		FOREIGN KEY (user_id) REFERENCES users(id),
-		FOREIGN KEY (issue_id) REFERENCES issues(id)
-	);
-
-	INSERT INTO users (username, email) VALUES ('testuser', 'test@example.com');
-	INSERT INTO users (username, email) VALUES ('voter', 'voter@example.com');
-	`
-	if _, err := db.Exec(schema); err != nil {
-		t.Fatalf("Failed to create schema: %v", err)
+	// Auto migrate the schema
+	if err := db.AutoMigrate(&models.User{}, &models.Issue{}, &models.Vote{}); err != nil {
+		t.Fatalf("Failed to migrate schema: %v", err)
 	}
+
+	// Insert test users
+	db.Create(&models.User{Username: "testuser", Email: "test@example.com"})
+	db.Create(&models.User{Username: "voter", Email: "voter@example.com"})
 
 	return db
 }
 
 func TestIssueService_CreateIssue(t *testing.T) {
 	db := setupIssueTestDB(t)
-	defer db.Close()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
 
 	service := NewIssueService(db)
 
@@ -80,7 +53,8 @@ func TestIssueService_CreateIssue(t *testing.T) {
 
 func TestIssueService_VoteIssue(t *testing.T) {
 	db := setupIssueTestDB(t)
-	defer db.Close()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
 
 	service := NewIssueService(db)
 
@@ -115,7 +89,8 @@ func TestIssueService_VoteIssue(t *testing.T) {
 
 func TestIssueService_UnvoteIssue(t *testing.T) {
 	db := setupIssueTestDB(t)
-	defer db.Close()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
 
 	service := NewIssueService(db)
 
@@ -150,7 +125,8 @@ func TestIssueService_UnvoteIssue(t *testing.T) {
 
 func TestIssueService_ListIssues(t *testing.T) {
 	db := setupIssueTestDB(t)
-	defer db.Close()
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
 
 	service := NewIssueService(db)
 

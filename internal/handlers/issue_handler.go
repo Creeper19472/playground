@@ -24,13 +24,13 @@ func NewIssueHandler(issueService *services.IssueService, hub *ws.Hub) *IssueHan
 }
 
 type CreateIssueRequest struct {
-	UserID      int64  `json:"user_id"`
+	UserID      uint  `json:"user_id"`
 	Summary     string `json:"summary"`
 	Description string `json:"description"`
 }
 
 type VoteRequest struct {
-	UserID int64 `json:"user_id"`
+	UserID uint `json:"user_id"`
 }
 
 func (h *IssueHandler) CreateIssue(w http.ResponseWriter, r *http.Request) {
@@ -55,13 +55,13 @@ func (h *IssueHandler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 
 func (h *IssueHandler) GetIssue(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	id, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		http.Error(w, "Invalid issue ID", http.StatusBadRequest)
 		return
 	}
 
-	issue, err := h.issueService.GetIssueByID(id)
+	issue, err := h.issueService.GetIssueByID(uint(id))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -84,7 +84,7 @@ func (h *IssueHandler) ListIssues(w http.ResponseWriter, r *http.Request) {
 
 func (h *IssueHandler) VoteIssue(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	issueID, err := strconv.ParseInt(vars["id"], 10, 64)
+	issueID, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		http.Error(w, "Invalid issue ID", http.StatusBadRequest)
 		return
@@ -96,13 +96,13 @@ func (h *IssueHandler) VoteIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.issueService.VoteIssue(req.UserID, issueID); err != nil {
+	if err := h.issueService.VoteIssue(req.UserID, uint(issueID)); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Get updated issue and broadcast
-	issue, err := h.issueService.GetIssueByID(issueID)
+	issue, err := h.issueService.GetIssueByID(uint(issueID))
 	if err != nil {
 		log.Printf("Failed to get issue after voting: %v", err)
 	} else {
@@ -115,7 +115,7 @@ func (h *IssueHandler) VoteIssue(w http.ResponseWriter, r *http.Request) {
 
 func (h *IssueHandler) UnvoteIssue(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	issueID, err := strconv.ParseInt(vars["id"], 10, 64)
+	issueID, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		http.Error(w, "Invalid issue ID", http.StatusBadRequest)
 		return
@@ -127,13 +127,13 @@ func (h *IssueHandler) UnvoteIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.issueService.UnvoteIssue(req.UserID, issueID); err != nil {
+	if err := h.issueService.UnvoteIssue(req.UserID, uint(issueID)); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// Get updated issue and broadcast
-	issue, err := h.issueService.GetIssueByID(issueID)
+	issue, err := h.issueService.GetIssueByID(uint(issueID))
 	if err != nil {
 		log.Printf("Failed to get issue after unvoting: %v", err)
 	} else {

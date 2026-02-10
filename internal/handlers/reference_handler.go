@@ -18,8 +18,8 @@ func NewReferenceHandler(referenceService *services.ReferenceService) *Reference
 }
 
 type CreateReferenceRequest struct {
-	UserID      int64  `json:"user_id"`
-	IssueID     int64  `json:"issue_id"`
+	UserID      uint  `json:"user_id"`
+	IssueID     uint  `json:"issue_id"`
 	URL         string `json:"url"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -44,13 +44,13 @@ func (h *ReferenceHandler) CreateReference(w http.ResponseWriter, r *http.Reques
 
 func (h *ReferenceHandler) GetReference(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	id, err := strconv.ParseUint(vars["id"], 10, 32)
 	if err != nil {
 		http.Error(w, "Invalid reference ID", http.StatusBadRequest)
 		return
 	}
 
-	reference, err := h.referenceService.GetReferenceByID(id)
+	reference, err := h.referenceService.GetReferenceByID(uint(id))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -62,13 +62,13 @@ func (h *ReferenceHandler) GetReference(w http.ResponseWriter, r *http.Request) 
 
 func (h *ReferenceHandler) ListReferencesByIssue(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	issueID, err := strconv.ParseInt(vars["issue_id"], 10, 64)
+	issueID, err := strconv.ParseUint(vars["issue_id"], 10, 32)
 	if err != nil {
 		http.Error(w, "Invalid issue ID", http.StatusBadRequest)
 		return
 	}
 
-	references, err := h.referenceService.ListReferencesByIssue(issueID)
+	references, err := h.referenceService.ListReferencesByIssue(uint(issueID))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

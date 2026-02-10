@@ -37,7 +37,7 @@ func (h *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
 		http.Error(w, "Invalid user_id", http.StatusBadRequest)
 		return
@@ -51,7 +51,7 @@ func (h *WebSocketHandler) HandleWebSocket(w http.ResponseWriter, r *http.Reques
 
 	client := &ws.Client{
 		ID:       uuid.New().String(),
-		UserID:   userID,
+		UserID:   uint(userID),
 		Username: username,
 		Conn:     conn,
 		Hub:      h.hub,
