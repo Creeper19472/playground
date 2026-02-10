@@ -18,7 +18,7 @@ func NewReferenceService(db *sql.DB) *ReferenceService {
 // CreateReference creates a new reference
 func (s *ReferenceService) CreateReference(userID, issueID int64, url, title, description string) (*models.Reference, error) {
 	result, err := s.db.Exec(
-		"INSERT INTO references (user_id, issue_id, url, title, description) VALUES (?, ?, ?, ?, ?)",
+		"INSERT INTO issue_references (user_id, issue_id, url, title, description) VALUES (?, ?, ?, ?, ?)",
 		userID, issueID, url, title, description,
 	)
 	if err != nil {
@@ -37,7 +37,7 @@ func (s *ReferenceService) CreateReference(userID, issueID int64, url, title, de
 func (s *ReferenceService) GetReferenceByID(id int64) (*models.Reference, error) {
 	reference := &models.Reference{}
 	err := s.db.QueryRow(
-		"SELECT id, user_id, issue_id, url, title, description, created_at FROM references WHERE id = ?",
+		"SELECT id, user_id, issue_id, url, title, description, created_at FROM issue_references WHERE id = ?",
 		id,
 	).Scan(&reference.ID, &reference.UserID, &reference.IssueID, &reference.URL, &reference.Title, &reference.Description, &reference.CreatedAt)
 
@@ -50,7 +50,7 @@ func (s *ReferenceService) GetReferenceByID(id int64) (*models.Reference, error)
 // ListReferencesByIssue retrieves all references for an issue
 func (s *ReferenceService) ListReferencesByIssue(issueID int64) ([]*models.Reference, error) {
 	rows, err := s.db.Query(
-		"SELECT id, user_id, issue_id, url, title, description, created_at FROM references WHERE issue_id = ? ORDER BY created_at DESC",
+		"SELECT id, user_id, issue_id, url, title, description, created_at FROM issue_references WHERE issue_id = ? ORDER BY created_at DESC",
 		issueID,
 	)
 	if err != nil {

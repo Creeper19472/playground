@@ -73,7 +73,7 @@ func (d *Database) InitSchema() error {
 		FOREIGN KEY (issue_id) REFERENCES issues(id)
 	);
 
-	CREATE TABLE IF NOT EXISTS references (
+	CREATE TABLE IF NOT EXISTS issue_references (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		user_id INTEGER NOT NULL,
 		issue_id INTEGER NOT NULL,
@@ -88,7 +88,7 @@ func (d *Database) InitSchema() error {
 	CREATE INDEX IF NOT EXISTS idx_messages_issue ON messages(issue_id);
 	CREATE INDEX IF NOT EXISTS idx_issues_vote_count ON issues(vote_count DESC);
 	CREATE INDEX IF NOT EXISTS idx_votes_issue ON votes(issue_id);
-	CREATE INDEX IF NOT EXISTS idx_references_issue ON references(issue_id);
+	CREATE INDEX IF NOT EXISTS idx_references_issue ON issue_references(issue_id);
 	`
 
 	_, err := d.DB.Exec(schema)

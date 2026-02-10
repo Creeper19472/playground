@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playground - Real-time Collaboration Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .panel h2 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .issue-list, .message-list, .event-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        
+        .issue-item, .message-item, .event-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+        
+        .issue-item {
+            border-left: 4px solid #007bff;
+        }
+        
+        .message-item {
+            border-left: 4px solid #28a745;
+        }
+        
+        .event-item {
+            border-left: 4px solid #ffc107;
+            font-size: 13px;
+        }
+        
+        .vote-count {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .issue-summary {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .issue-meta {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .vote-btn {
+            width: auto;
+            padding: 5px 15px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Playground - Real-time Collaboration Demo</h1>
+        <div id="status" class="status disconnected">Disconnected</div>
+        
+        <div class="grid">
+            <div class="panel">
+                <h2>👤 Create User</h2>
+                <input type="text" id="username" placeholder="Username">
+                <input type="email" id="email" placeholder="Email">
+                <button onclick="createUser()">Create User</button>
+                <div id="currentUser"></div>
+            </div>
+            
+            <div class="panel">
+                <h2>💬 Send Message</h2>
+                <textarea id="messageContent" placeholder="Your message..." rows="3"></textarea>
+                <button onclick="sendMessage()" id="sendBtn" disabled>Send Message</button>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div class="panel">
+                <h2>📋 Create Issue</h2>
+                <input type="text" id="issueSummary" placeholder="Issue summary">
+                <textarea id="issueDescription" placeholder="Description..." rows="2"></textarea>
+                <button onclick="createIssue()" id="createIssueBtn" disabled>Create Issue</button>
+            </div>
+            
+            <div class="panel">
+                <h2>📚 Issues (Ranked by Votes)</h2>
+                <div id="issueList" class="issue-list">
+                    <p style="text-align: center; color: #999;">No issues yet</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div class="panel">
+                <h2>💬 Messages</h2>
+                <div id="messageList" class="message-list">
+                    <p style="text-align: center; color: #999;">No messages yet</p>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>🔔 Real-time Events</h2>
+                <div id="eventList" class="event-list">
+                    <p style="text-align: center; color: #999;">Waiting for events...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let ws = null;
+        let currentUser = null;
+        const API_URL = 'http://localhost:8080/api/v1';
+        const WS_URL = 'ws://localhost:8080/ws';
+        
+        async function createUser() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            
+            if (!username || !email) {
+                alert('Please enter username and email');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email })
+                });
+                
+                if (!response.ok) throw new Error('Failed to create user');
+                
+                currentUser = await response.json();
+                document.getElementById('currentUser').innerHTML = 
+                    `<p style="color: green; margin-top: 10px;">✓ Logged in as ${currentUser.username}</p>`;
+                
+                connectWebSocket();
+                loadIssues();
+                loadMessages();
+                
+                document.getElementById('sendBtn').disabled = false;
+                document.getElementById('createIssueBtn').disabled = false;
+            } catch (error) {
+                alert('Error creating user: ' + error.message);
+            }
+        }
+        
+        function connectWebSocket() {
+            if (!currentUser) return;
+            
+            ws = new WebSocket(`${WS_URL}?user_id=${currentUser.id}&username=${currentUser.username}`);
+            
+            ws.onopen = () => {
+                document.getElementById('status').className = 'status connected';
+                document.getElementById('status').textContent = 'Connected ✓';
+                addEvent('Connected to server');
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('status').className = 'status disconnected';
+                document.getElementById('status').textContent = 'Disconnected ✗';
+                addEvent('Disconnected from server');
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleWebSocketMessage(message);
+            };
+        }
+        
+        function handleWebSocketMessage(message) {
+            addEvent(`${message.type}: ${JSON.stringify(message.data).substring(0, 50)}...`);
+            
+            if (message.type === 'new_issue' || message.type === 'issue_voted' || message.type === 'issue_unvoted') {
+                loadIssues();
+            } else if (message.type === 'new_message') {
+                loadMessages();
+            }
+        }
+        
+        async function sendMessage() {
+            const content = document.getElementById('messageContent').value;
+            if (!content) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/messages`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUser.id,
+                        content: content
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to send message');
+                
+                document.getElementById('messageContent').value = '';
+                loadMessages();
+            } catch (error) {
+                alert('Error sending message: ' + error.message);
+            }
+        }
+        
+        async function createIssue() {
+            const summary = document.getElementById('issueSummary').value;
+            const description = document.getElementById('issueDescription').value;
+            
+            if (!summary) {
+                alert('Please enter issue summary');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/issues`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUser.id,
+                        summary: summary,
+                        description: description
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to create issue');
+                
+                document.getElementById('issueSummary').value = '';
+                document.getElementById('issueDescription').value = '';
+                loadIssues();
+            } catch (error) {
+                alert('Error creating issue: ' + error.message);
+            }
+        }
+        
+        async function voteIssue(issueId) {
+            try {
+                const response = await fetch(`${API_URL}/issues/${issueId}/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: currentUser.id })
+                });
+                
+                if (!response.ok) throw new Error('Already voted or error');
+                loadIssues();
+            } catch (error) {
+                alert('Error voting: ' + error.message);
+            }
+        }
+        
+        async function loadIssues() {
+            try {
+                const response = await fetch(`${API_URL}/issues`);
+                const issues = await response.json();
+                
+                const issueList = document.getElementById('issueList');
+                if (issues && issues.length > 0) {
+                    issueList.innerHTML = issues.map(issue => `
+                        <div class="issue-item">
+                            <div class="issue-summary">
+                                ${issue.summary}
+                                <span class="vote-count">👍 ${issue.vote_count}</span>
+                            </div>
+                            <div class="issue-meta">
+                                by ${issue.username} • ${new Date(issue.created_at).toLocaleString()}
+                            </div>
+                            <p style="margin: 8px 0; font-size: 13px;">${issue.description || ''}</p>
+                            <button class="vote-btn" onclick="voteIssue(${issue.id})">Vote</button>
+                        </div>
+                    `).join('');
+                } else {
+                    issueList.innerHTML = '<p style="text-align: center; color: #999;">No issues yet</p>';
+                }
+            } catch (error) {
+                console.error('Error loading issues:', error);
+            }
+        }
+        
+        async function loadMessages() {
+            try {
+                const response = await fetch(`${API_URL}/messages?limit=10`);
+                const messages = await response.json();
+                
+                const messageList = document.getElementById('messageList');
+                if (messages && messages.length > 0) {
+                    messageList.innerHTML = messages.reverse().map(msg => `
+                        <div class="message-item">
+                            <strong>${msg.username}:</strong> ${msg.content}
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">
+                                ${new Date(msg.created_at).toLocaleString()}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    messageList.innerHTML = '<p style="text-align: center; color: #999;">No messages yet</p>';
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+        
+        function addEvent(text) {
+            const eventList = document.getElementById('eventList');
+            const eventItem = document.createElement('div');
+            eventItem.className = 'event-item';
+            eventItem.innerHTML = `
+                <div>${text}</div>
+                <div style="font-size: 11px; color: #999; margin-top: 3px;">
+                    ${new Date().toLocaleTimeString()}
+                </div>
+            `;
+            
+            if (eventList.querySelector('p')) {
+                eventList.innerHTML = '';
+            }
+            
+            eventList.insertBefore(eventItem, eventList.firstChild);
+            
+            // Keep only last 10 events
+            while (eventList.children.length > 10) {
+                eventList.removeChild(eventList.lastChild);
+            }
+        }
+    </script>
+</body>
+</html>
