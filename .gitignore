@@ -37,3 +37,9 @@ Thumbs.db
 
 # Temporary files
 /tmp/
+
+# Configuration files (except examples)
+config.yaml
+config.yml
+!config.example*.yaml
+!config.example*.yml

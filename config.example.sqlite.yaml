@@ -1,0 +1,12 @@
+# Playground Server Configuration - SQLite Example
+# This is the default configuration using SQLite database
+
+server:
+  host: "0.0.0.0"  # Listen on all interfaces
+  port: 8080       # HTTP server port
+
+database:
+  type: "sqlite"                # Database type: sqlite, postgres, or mysql
+  path: "./playground.db"       # SQLite database file path
+  max_open_conns: 100          # Maximum number of open connections
+  max_idle_conns: 10           # Maximum number of idle connections

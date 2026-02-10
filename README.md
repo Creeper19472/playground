@@ -11,6 +11,8 @@ A high-performance Go backend that enables real-time user interaction with messa
 - **High Scalability**: Optimized for 100k concurrent connections
 - **RESTful API**: Clean HTTP API for all operations
 - **WebSocket Events**: Real-time updates for new messages, issues, and votes
+- **Multi-Database Support**: SQLite, PostgreSQL, and MySQL support via GORM
+- **Flexible Configuration**: YAML configuration files with environment variable overrides
 
 ## Architecture
 
@@ -18,7 +20,7 @@ A high-performance Go backend that enables real-time user interaction with messa
 
 - **WebSocket Hub**: Manages all active WebSocket connections with efficient broadcasting
 - **RESTful API**: HTTP endpoints for CRUD operations
-- **SQLite Database**: Persistent storage with optimized indexes (easily swappable to PostgreSQL)
+- **GORM ORM**: Database abstraction layer supporting multiple databases
 - **Service Layer**: Business logic separation for maintainability
 - **Handler Layer**: HTTP/WebSocket request handling
 
@@ -27,9 +29,11 @@ A high-performance Go backend that enables real-time user interaction with messa
 - **Language**: Go 1.24+
 - **WebSocket**: gorilla/websocket
 - **HTTP Router**: gorilla/mux
-- **Database**: SQLite (mattn/go-sqlite3)
+- **ORM**: GORM
+- **Databases**: SQLite, PostgreSQL, MySQL
 - **CORS**: rs/cors
 - **UUID**: google/uuid
+- **Config**: YAML (gopkg.in/yaml.v3)
 
 ## Quick Start
 
@@ -37,6 +41,7 @@ A high-performance Go backend that enables real-time user interaction with messa
 
 - Go 1.24 or higher
 - GCC (for SQLite compilation)
+- PostgreSQL or MySQL (optional, for non-SQLite deployments)
 
 ### Installation
 
@@ -51,14 +56,108 @@ go mod download
 # Build the server
 go build -o bin/server ./cmd/server
 
-# Run the server
+# Run the server with default configuration (SQLite)
+./bin/server
+
+# Or run with a custom configuration file
+./bin/server -config config.yaml
+```
+
+## Configuration
+
+The server supports three methods of configuration (in order of precedence):
+
+1. **Environment variables** (highest priority)
+2. **Configuration file** (YAML format)
+3. **Default values** (lowest priority)
+
+### Configuration File
+
+Create a `config.yaml` file with your desired settings. See example configurations:
+
+- `config.example.sqlite.yaml` - SQLite configuration (default)
+- `config.example.postgres.yaml` - PostgreSQL configuration
+- `config.example.mysql.yaml` - MySQL configuration
+
+#### SQLite Configuration Example
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+database:
+  type: "sqlite"
+  path: "./playground.db"
+  max_open_conns: 100
+  max_idle_conns: 10
+```
+
+#### PostgreSQL Configuration Example
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+database:
+  type: "postgres"
+  host: "localhost"
+  port: 5432
+  name: "playground"
+  user: "playground_user"
+  password: "your_password"
+  ssl_mode: "disable"
+  max_open_conns: 100
+  max_idle_conns: 10
+```
+
+#### MySQL Configuration Example
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+database:
+  type: "mysql"
+  host: "localhost"
+  port: 3306
+  name: "playground"
+  user: "playground_user"
+  password: "your_password"
+  max_open_conns: 100
+  max_idle_conns: 10
+```
+
+### Environment Variables
+
+You can override any configuration value using environment variables:
+
+```bash
+# Server configuration
+export SERVER_HOST="127.0.0.1"
+export SERVER_PORT="9090"
+
+# Database configuration
+export DB_TYPE="postgres"
+export DB_HOST="localhost"
+export DB_PORT="5432"
+export DB_NAME="playground"
+export DB_USER="myuser"
+export DB_PASSWORD="mypassword"
+export DB_SSL_MODE="disable"
+
+# For SQLite
+export DB_PATH="./my-database.db"
+
 ./bin/server
 ```
 
-The server will start on port 8080 by default. You can override this with the `PORT` environment variable:
+### Command-Line Options
 
 ```bash
-PORT=3000 ./bin/server
+./bin/server -config /path/to/config.yaml
 ```
 
 ## API Documentation

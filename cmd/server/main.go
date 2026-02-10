@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Creeper19472/playground/config"
 	"github.com/Creeper19472/playground/internal/db"
 	"github.com/Creeper19472/playground/internal/handlers"
 	"github.com/Creeper19472/playground/internal/services"
@@ -17,8 +19,26 @@ import (
 )
 
 func main() {
+	// Parse command-line flags
+	configPath := flag.String("config", "", "Path to configuration file (YAML)")
+	flag.Parse()
+
+	// Load configuration
+	cfg, err := config.LoadConfig(*configPath)
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("Invalid configuration: %v", err)
+	}
+
+	log.Printf("Loaded configuration: Server=%s:%d, Database=%s", 
+		cfg.Server.Host, cfg.Server.Port, cfg.Database.Type)
+
 	// Initialize database
-	database, err := db.NewDatabase("./playground.db")
+	database, err := db.NewDatabase(&cfg.Database)
 	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
@@ -93,13 +113,9 @@ func main() {
 	handler := c.Handler(router)
 
 	// Start server
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
+	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	server := &http.Server{
-		Addr:    ":" + port,
+		Addr:    addr,
 		Handler: handler,
 	}
 
@@ -115,9 +131,9 @@ func main() {
 		}
 	}()
 
-	log.Printf("Server starting on port %s...", port)
-	log.Printf("WebSocket endpoint: ws://localhost:%s/ws", port)
-	log.Printf("API endpoint: http://localhost:%s/api/v1", port)
+	log.Printf("Server starting on %s...", addr)
+	log.Printf("WebSocket endpoint: ws://%s:%d/ws", cfg.Server.Host, cfg.Server.Port)
+	log.Printf("API endpoint: http://%s:%d/api/v1", cfg.Server.Host, cfg.Server.Port)
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
