@@ -132,8 +132,14 @@ func main() {
 	}()
 
 	log.Printf("Server starting on %s...", addr)
-	log.Printf("WebSocket endpoint: ws://%s:%d/ws", cfg.Server.Host, cfg.Server.Port)
-	log.Printf("API endpoint: http://%s:%d/api/v1", cfg.Server.Host, cfg.Server.Port)
+	
+	// Log user-friendly URLs
+	displayHost := cfg.Server.Host
+	if displayHost == "0.0.0.0" || displayHost == "" {
+		displayHost = "localhost"
+	}
+	log.Printf("WebSocket endpoint: ws://%s:%d/ws", displayHost, cfg.Server.Port)
+	log.Printf("API endpoint: http://%s:%d/api/v1", displayHost, cfg.Server.Port)
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server error: %v", err)
