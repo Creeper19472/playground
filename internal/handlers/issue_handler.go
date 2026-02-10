@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -101,8 +102,12 @@ func (h *IssueHandler) VoteIssue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get updated issue and broadcast
-	issue, _ := h.issueService.GetIssueByID(issueID)
-	h.hub.BroadcastMessage("issue_voted", issue)
+	issue, err := h.issueService.GetIssueByID(issueID)
+	if err != nil {
+		log.Printf("Failed to get issue after voting: %v", err)
+	} else {
+		h.hub.BroadcastMessage("issue_voted", issue)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "voted"})
@@ -128,8 +133,12 @@ func (h *IssueHandler) UnvoteIssue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get updated issue and broadcast
-	issue, _ := h.issueService.GetIssueByID(issueID)
-	h.hub.BroadcastMessage("issue_unvoted", issue)
+	issue, err := h.issueService.GetIssueByID(issueID)
+	if err != nil {
+		log.Printf("Failed to get issue after unvoting: %v", err)
+	} else {
+		h.hub.BroadcastMessage("issue_unvoted", issue)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "unvoted"})

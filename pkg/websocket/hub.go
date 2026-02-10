@@ -58,15 +58,27 @@ func (h *Hub) Run() {
 
 		case message := <-h.broadcast:
 			h.mutex.RLock()
+			var clientsToRemove []*Client
 			for client := range h.clients {
 				select {
 				case client.Send <- message:
 				default:
-					close(client.Send)
-					delete(h.clients, client)
+					clientsToRemove = append(clientsToRemove, client)
 				}
 			}
 			h.mutex.RUnlock()
+
+			// Remove clients that couldn't receive the message
+			if len(clientsToRemove) > 0 {
+				h.mutex.Lock()
+				for _, client := range clientsToRemove {
+					if _, ok := h.clients[client]; ok {
+						close(client.Send)
+						delete(h.clients, client)
+					}
+				}
+				h.mutex.Unlock()
+			}
 		}
 	}
 }
