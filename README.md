@@ -63,6 +63,32 @@ go build -o bin/server ./cmd/server
 ./bin/server -config config.yaml
 ```
 
+### First Run - Administrator Account
+
+On the first run, the server automatically creates an administrator account with secure credentials:
+
+```bash
+# Start the server for the first time
+./bin/server
+
+# Output will show:
+# Administrator account created successfully
+# ⚠️  IMPORTANT: Administrator credentials have been written to 'admin_credentials.txt'
+# ⚠️  Please save these credentials and delete the file for security!
+# ⚠️  Change the admin password immediately after first login.
+```
+
+**Security Best Practices:**
+
+1. **Save the credentials** from `admin_credentials.txt` to a secure password manager
+2. **Delete the file** immediately after saving: `rm admin_credentials.txt`
+3. **Change the password** on first login using the `/api/v1/auth/change-password` endpoint
+4. The credentials file has restrictive permissions (0600) and is automatically gitignored
+
+**Subsequent Runs:**
+
+On subsequent server starts, the system detects the existing administrator account and skips creation. No new credentials file is generated.
+
 ## Configuration
 
 The server supports three methods of configuration (in order of precedence):

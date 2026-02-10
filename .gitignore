@@ -43,3 +43,6 @@ config.yaml
 config.yml
 !config.example*.yaml
 !config.example*.yml
+
+# Admin credentials (sensitive)
+admin_credentials.txt

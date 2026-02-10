@@ -49,6 +49,29 @@ func main() {
 		log.Fatalf("Failed to auto migrate: %v", err)
 	}
 
+	// Initialize admin account if it doesn't exist
+	adminInit := services.NewAdminInitializer(database.DB)
+	created, username, password, err := adminInit.InitializeAdminAccount()
+	if err != nil {
+		log.Fatalf("Failed to initialize admin account: %v", err)
+	}
+	
+	if created {
+		log.Printf("Administrator account created successfully")
+		
+		// Write credentials to a secure file
+		credentialsFile := "admin_credentials.txt"
+		if err := services.WriteCredentialsToFile(username, password, credentialsFile); err != nil {
+			log.Fatalf("Failed to write admin credentials to file: %v", err)
+		}
+		
+		log.Printf("⚠️  IMPORTANT: Administrator credentials have been written to '%s'", credentialsFile)
+		log.Printf("⚠️  Please save these credentials and delete the file for security!")
+		log.Printf("⚠️  Change the admin password immediately after first login.")
+	} else {
+		log.Printf("Administrator account already exists, skipping creation")
+	}
+
 	// Initialize WebSocket hub
 	hub := websocket.NewHub()
 	go hub.Run()
