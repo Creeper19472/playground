@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Playground - Real-time Collaboration Demo</title>
+    <title>Playground - Real-time Collaboration Demo (with Auth)</title>
     <style>
         * {
             margin: 0;
@@ -43,6 +43,11 @@
             color: #721c24;
         }
         
+        .status.authenticated {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
         .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -63,7 +68,7 @@
             font-size: 18px;
         }
         
-        input, textarea, button {
+        input, textarea, button, select {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
@@ -87,6 +92,22 @@
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
+        }
+        
+        button.secondary {
+            background: #6c757d;
+        }
+        
+        button.secondary:hover {
+            background: #545b62;
+        }
+        
+        button.danger {
+            background: #dc3545;
+        }
+        
+        button.danger:hover {
+            background: #c82333;
         }
         
         .issue-list, .message-list, .event-list {
@@ -137,56 +158,123 @@
             color: #666;
         }
         
-        .vote-btn {
+        .vote-btn, .action-btn {
             width: auto;
             padding: 5px 15px;
             font-size: 12px;
             margin-right: 5px;
         }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .user-info {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .tab.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎮 Playground - Real-time Collaboration Demo</h1>
-        <div id="status" class="status disconnected">Disconnected</div>
+        <h1>🎮 Playground - Real-time Collaboration Demo (with Auth)</h1>
+        <div id="authStatus" class="status disconnected">Not logged in</div>
+        <div id="wsStatus" class="status disconnected hidden">WebSocket: Disconnected</div>
         
-        <div class="grid">
+        <!-- Authentication Section -->
+        <div id="authSection">
             <div class="panel">
-                <h2>👤 Create User</h2>
-                <input type="text" id="username" placeholder="Username">
-                <input type="email" id="email" placeholder="Email">
-                <button onclick="createUser()">Create User</button>
-                <div id="currentUser"></div>
-            </div>
-            
-            <div class="panel">
-                <h2>💬 Send Message</h2>
-                <textarea id="messageContent" placeholder="Your message..." rows="3"></textarea>
-                <button onclick="sendMessage()" id="sendBtn" disabled>Send Message</button>
-            </div>
-        </div>
-        
-        <div class="grid">
-            <div class="panel">
-                <h2>📋 Create Issue</h2>
-                <input type="text" id="issueSummary" placeholder="Issue summary">
-                <textarea id="issueDescription" placeholder="Description..." rows="2"></textarea>
-                <button onclick="createIssue()" id="createIssueBtn" disabled>Create Issue</button>
-            </div>
-            
-            <div class="panel">
-                <h2>📚 Issues (Ranked by Votes)</h2>
-                <div id="issueList" class="issue-list">
-                    <p style="text-align: center; color: #999;">No issues yet</p>
+                <h2>🔐 Authentication</h2>
+                <div class="tab-container">
+                    <button class="tab active" onclick="showAuthTab('login')">Login</button>
+                    <button class="tab" onclick="showAuthTab('register')">Register</button>
+                </div>
+                
+                <div id="loginTab" class="tab-content active">
+                    <input type="text" id="loginUsername" placeholder="Username or Email">
+                    <input type="password" id="loginPassword" placeholder="Password">
+                    <button onclick="login()">Login</button>
+                </div>
+                
+                <div id="registerTab" class="tab-content">
+                    <input type="text" id="regUsername" placeholder="Username">
+                    <input type="email" id="regEmail" placeholder="Email">
+                    <input type="password" id="regPassword" placeholder="Password">
+                    <input type="password" id="regPasswordConfirm" placeholder="Confirm Password">
+                    <button onclick="register()">Register</button>
                 </div>
             </div>
         </div>
         
-        <div class="grid">
+        <!-- Main Application (hidden until logged in) -->
+        <div id="appSection" class="hidden">
             <div class="panel">
-                <h2>💬 Messages</h2>
-                <div id="messageList" class="message-list">
-                    <p style="text-align: center; color: #999;">No messages yet</p>
+                <div class="user-info">
+                    <strong>👤 Logged in as:</strong> <span id="currentUsername"></span>
+                    <span id="adminBadge" class="hidden" style="background: #ffc107; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-left: 8px;">ADMIN</span>
+                    <button class="secondary" style="float: right; width: auto; padding: 5px 15px; margin: 0;" onclick="logout()">Logout</button>
+                    <button class="secondary" style="float: right; width: auto; padding: 5px 15px; margin: 0 10px 0 0;" onclick="showPasswordChange()">Change Password</button>
+                </div>
+            </div>
+            
+            <div class="grid">
+                <div class="panel">
+                    <h2>💬 Send Message</h2>
+                    <textarea id="messageContent" placeholder="Your message..." rows="3"></textarea>
+                    <button onclick="sendMessage()">Send Message</button>
+                </div>
+                
+                <div class="panel">
+                    <h2>📋 Create Issue/Topic</h2>
+                    <input type="text" id="issueSummary" placeholder="Issue summary">
+                    <textarea id="issueDescription" placeholder="Description..." rows="2"></textarea>
+                    <button onclick="createIssue()">Create Issue</button>
+                </div>
+            </div>
+            
+            <div class="grid">
+                <div class="panel">
+                    <h2>📚 Issues (Ranked by Votes)</h2>
+                    <div id="issueList" class="issue-list">
+                        <p style="text-align: center; color: #999;">No issues yet</p>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h2>💬 Messages</h2>
+                    <div id="messageList" class="message-list">
+                        <p style="text-align: center; color: #999;">No messages yet</p>
+                    </div>
                 </div>
             </div>
             
@@ -196,63 +284,273 @@
                     <p style="text-align: center; color: #999;">Waiting for events...</p>
                 </div>
             </div>
+            
+            <!-- Admin Panel (only visible to admins) -->
+            <div id="adminPanel" class="hidden">
+                <div class="panel">
+                    <h2>⚙️ Admin Panel</h2>
+                    <div class="tab-container">
+                        <button class="tab active" onclick="showAdminTab('users')">Users</button>
+                        <button class="tab" onclick="showAdminTab('roles')">Roles</button>
+                        <button class="tab" onclick="showAdminTab('permissions')">Permissions</button>
+                    </div>
+                    
+                    <div id="usersAdminTab" class="tab-content active">
+                        <h3 style="margin-bottom: 10px;">User Management</h3>
+                        <button onclick="loadUsers()">Refresh Users</button>
+                        <div id="userList" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <p style="text-align: center; color: #999;">Click refresh to load users</p>
+                        </div>
+                    </div>
+                    
+                    <div id="rolesAdminTab" class="tab-content">
+                        <h3 style="margin-bottom: 10px;">Role Management</h3>
+                        <input type="text" id="newRoleName" placeholder="Role name">
+                        <input type="text" id="newRoleDesc" placeholder="Description">
+                        <button onclick="createRole()">Create Role</button>
+                        <button class="secondary" onclick="loadRoles()">Refresh Roles</button>
+                        <div id="roleList" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <p style="text-align: center; color: #999;">Click refresh to load roles</p>
+                        </div>
+                    </div>
+                    
+                    <div id="permissionsAdminTab" class="tab-content">
+                        <h3 style="margin-bottom: 10px;">Permission Management</h3>
+                        <input type="text" id="newPermName" placeholder="Permission name (e.g., delete_user)">
+                        <input type="text" id="newPermDesc" placeholder="Description">
+                        <button onclick="createPermission()">Create Permission</button>
+                        <button class="secondary" onclick="loadPermissions()">Refresh Permissions</button>
+                        <div id="permissionList" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                            <p style="text-align: center; color: #999;">Click refresh to load permissions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
     <script>
         let ws = null;
         let currentUser = null;
+        let authToken = null;
         const API_URL = 'http://localhost:8080/api/v1';
+        const AUTH_URL = 'http://localhost:8080/api/v1/auth';
         const WS_URL = 'ws://localhost:8080/ws';
         
-        async function createUser() {
-            const username = document.getElementById('username').value;
-            const email = document.getElementById('email').value;
+        // Auth Tab Switching
+        function showAuthTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             
-            if (!username || !email) {
-                alert('Please enter username and email');
+            if (tab === 'login') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('loginTab').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('registerTab').classList.add('active');
+            }
+        }
+        
+        // Admin Tab Switching
+        function showAdminTab(tab) {
+            document.querySelectorAll('#adminPanel .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#adminPanel .tab-content').forEach(c => c.classList.remove('active'));
+            
+            const tabMap = { users: 0, roles: 1, permissions: 2 };
+            const tabElements = document.querySelectorAll('#adminPanel .tab');
+            tabElements[tabMap[tab]].classList.add('active');
+            document.getElementById(tab + 'AdminTab').classList.add('active');
+        }
+        
+        // Registration
+        async function register() {
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+            
+            if (!username || !email || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                alert('Passwords do not match');
                 return;
             }
             
             try {
-                const response = await fetch(`${API_URL}/users`, {
+                const response = await fetch(`${AUTH_URL}/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, email })
+                    body: JSON.stringify({ username, email, password })
                 });
                 
-                if (!response.ok) throw new Error('Failed to create user');
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Registration failed');
+                }
                 
-                currentUser = await response.json();
-                document.getElementById('currentUser').innerHTML = 
-                    `<p style="color: green; margin-top: 10px;">✓ Logged in as ${currentUser.username}</p>`;
+                const data = await response.json();
+                alert('Registration successful! Please login.');
+                showAuthTab('login');
+                document.getElementById('loginUsername').value = username;
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // Login
+        async function login() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                alert('Please enter username and password');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${AUTH_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
                 
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Login failed');
+                }
+                
+                const data = await response.json();
+                authToken = data.token;
+                currentUser = data.user;
+                
+                // Update UI
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('appSection').classList.remove('hidden');
+                document.getElementById('wsStatus').classList.remove('hidden');
+                document.getElementById('authStatus').className = 'status authenticated';
+                document.getElementById('authStatus').textContent = '✓ Authenticated as ' + currentUser.username;
+                document.getElementById('currentUsername').textContent = currentUser.username;
+                
+                // Show admin panel if user is admin
+                if (currentUser.is_admin) {
+                    document.getElementById('adminBadge').classList.remove('hidden');
+                    document.getElementById('adminPanel').classList.remove('hidden');
+                }
+                
+                // Connect WebSocket and load data
                 connectWebSocket();
                 loadIssues();
                 loadMessages();
                 
-                document.getElementById('sendBtn').disabled = false;
-                document.getElementById('createIssueBtn').disabled = false;
+                addEvent('Logged in successfully');
             } catch (error) {
-                alert('Error creating user: ' + error.message);
+                alert('Error: ' + error.message);
             }
         }
         
+        // Logout
+        async function logout() {
+            try {
+                if (authToken) {
+                    await fetch(`${AUTH_URL}/logout`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + authToken
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            
+            // Disconnect WebSocket
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            
+            // Reset state
+            authToken = null;
+            currentUser = null;
+            
+            // Update UI
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('appSection').classList.add('hidden');
+            document.getElementById('wsStatus').classList.add('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('adminBadge').classList.add('hidden');
+            document.getElementById('authStatus').className = 'status disconnected';
+            document.getElementById('authStatus').textContent = 'Not logged in';
+            
+            // Clear form fields
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('regPassword').value = '';
+            document.getElementById('regPasswordConfirm').value = '';
+        }
+        
+        // Password Change
+        function showPasswordChange() {
+            const currentPassword = prompt('Enter current password:');
+            if (!currentPassword) return;
+            
+            const newPassword = prompt('Enter new password:');
+            if (!newPassword) return;
+            
+            const confirmPassword = prompt('Confirm new password:');
+            if (newPassword !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
+            }
+            
+            changePassword(currentPassword, newPassword);
+        }
+        
+        async function changePassword(currentPassword, newPassword) {
+            try {
+                const response = await fetch(`${AUTH_URL}/change-password`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({ 
+                        current_password: currentPassword,
+                        new_password: newPassword 
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Password change failed');
+                }
+                
+                alert('Password changed successfully!');
+                addEvent('Password changed');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        // WebSocket Connection
         function connectWebSocket() {
-            if (!currentUser) return;
+            if (!currentUser || !authToken) return;
             
             ws = new WebSocket(`${WS_URL}?user_id=${currentUser.id}&username=${currentUser.username}`);
             
             ws.onopen = () => {
-                document.getElementById('status').className = 'status connected';
-                document.getElementById('status').textContent = 'Connected ✓';
-                addEvent('Connected to server');
+                document.getElementById('wsStatus').className = 'status connected';
+                document.getElementById('wsStatus').textContent = 'WebSocket: Connected ✓';
+                addEvent('WebSocket connected');
             };
             
             ws.onclose = () => {
-                document.getElementById('status').className = 'status disconnected';
-                document.getElementById('status').textContent = 'Disconnected ✗';
-                addEvent('Disconnected from server');
+                document.getElementById('wsStatus').className = 'status disconnected';
+                document.getElementById('wsStatus').textContent = 'WebSocket: Disconnected ✗';
+                addEvent('WebSocket disconnected');
             };
             
             ws.onmessage = (event) => {
@@ -264,13 +562,14 @@
         function handleWebSocketMessage(message) {
             addEvent(`${message.type}: ${JSON.stringify(message.data).substring(0, 50)}...`);
             
-            if (message.type === 'new_issue' || message.type === 'issue_voted' || message.type === 'issue_unvoted') {
+            if (message.type === 'new_issue' || message.type === 'issue_voted' || message.type === 'issue_unvoted' || message.type === 'issue_updated' || message.type === 'issue_deleted') {
                 loadIssues();
             } else if (message.type === 'new_message') {
                 loadMessages();
             }
         }
         
+        // Send Message
         async function sendMessage() {
             const content = document.getElementById('messageContent').value;
             if (!content) return;
@@ -278,7 +577,10 @@
             try {
                 const response = await fetch(`${API_URL}/messages`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
                     body: JSON.stringify({
                         user_id: currentUser.id,
                         content: content
@@ -294,6 +596,7 @@
             }
         }
         
+        // Create Issue
         async function createIssue() {
             const summary = document.getElementById('issueSummary').value;
             const description = document.getElementById('issueDescription').value;
@@ -306,7 +609,10 @@
             try {
                 const response = await fetch(`${API_URL}/issues`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
                     body: JSON.stringify({
                         user_id: currentUser.id,
                         summary: summary,
@@ -324,29 +630,115 @@
             }
         }
         
+        // Vote Issue
         async function voteIssue(issueId) {
             try {
                 const response = await fetch(`${API_URL}/issues/${issueId}/vote`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
                     body: JSON.stringify({ user_id: currentUser.id })
                 });
                 
                 if (!response.ok) throw new Error('Already voted or error');
                 loadIssues();
+                addEvent('Voted on issue #' + issueId);
             } catch (error) {
                 alert('Error voting: ' + error.message);
             }
         }
         
+        // Unvote Issue
+        async function unvoteIssue(issueId) {
+            try {
+                const response = await fetch(`${API_URL}/issues/${issueId}/vote`, {
+                    method: 'DELETE',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({ user_id: currentUser.id })
+                });
+                
+                if (!response.ok) throw new Error('Not voted or error');
+                loadIssues();
+                addEvent('Removed vote from issue #' + issueId);
+            } catch (error) {
+                alert('Error unvoting: ' + error.message);
+            }
+        }
+        
+        // Edit Issue
+        async function editIssue(issueId) {
+            const summary = prompt('Enter new summary:');
+            if (!summary) return;
+            
+            const description = prompt('Enter new description:');
+            
+            try {
+                const response = await fetch(`${API_URL}/issues/${issueId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({ summary, description })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to update issue');
+                }
+                
+                loadIssues();
+                addEvent('Updated issue #' + issueId);
+            } catch (error) {
+                alert('Error updating issue: ' + error.message);
+            }
+        }
+        
+        // Delete Issue
+        async function deleteIssue(issueId) {
+            if (!confirm('Are you sure you want to delete this issue?')) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/issues/${issueId}`, {
+                    method: 'DELETE',
+                    headers: { 
+                        'Authorization': 'Bearer ' + authToken
+                    }
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete issue');
+                }
+                
+                loadIssues();
+                addEvent('Deleted issue #' + issueId);
+            } catch (error) {
+                alert('Error deleting issue: ' + error.message);
+            }
+        }
+        
+        // Load Issues
         async function loadIssues() {
             try {
-                const response = await fetch(`${API_URL}/issues`);
+                const response = await fetch(`${API_URL}/issues`, {
+                    headers: authToken ? { 'Authorization': 'Bearer ' + authToken } : {}
+                });
                 const issues = await response.json();
                 
                 const issueList = document.getElementById('issueList');
                 if (issues && issues.length > 0) {
-                    issueList.innerHTML = issues.map(issue => `
+                    issueList.innerHTML = issues.map(issue => {
+                        const isOwner = currentUser && issue.user_id === currentUser.id;
+                        const isAdmin = currentUser && currentUser.is_admin;
+                        const canEdit = isOwner || isAdmin;
+                        
+                        return `
                         <div class="issue-item">
                             <div class="issue-summary">
                                 ${issue.summary}
@@ -357,8 +749,11 @@
                             </div>
                             <p style="margin: 8px 0; font-size: 13px;">${issue.description || ''}</p>
                             <button class="vote-btn" onclick="voteIssue(${issue.id})">Vote</button>
+                            <button class="vote-btn secondary" onclick="unvoteIssue(${issue.id})">Unvote</button>
+                            ${canEdit ? `<button class="action-btn secondary" onclick="editIssue(${issue.id})">Edit</button>` : ''}
+                            ${canEdit ? `<button class="action-btn danger" onclick="deleteIssue(${issue.id})">Delete</button>` : ''}
                         </div>
-                    `).join('');
+                    `}).join('');
                 } else {
                     issueList.innerHTML = '<p style="text-align: center; color: #999;">No issues yet</p>';
                 }
@@ -367,9 +762,12 @@
             }
         }
         
+        // Load Messages
         async function loadMessages() {
             try {
-                const response = await fetch(`${API_URL}/messages?limit=10`);
+                const response = await fetch(`${API_URL}/messages?limit=10`, {
+                    headers: authToken ? { 'Authorization': 'Bearer ' + authToken } : {}
+                });
                 const messages = await response.json();
                 
                 const messageList = document.getElementById('messageList');
@@ -387,6 +785,153 @@
                 }
             } catch (error) {
                 console.error('Error loading messages:', error);
+            }
+        }
+        
+        // Admin Functions
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_URL}/users`, {
+                    headers: { 'Authorization': 'Bearer ' + authToken }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load users');
+                
+                const users = await response.json();
+                const userList = document.getElementById('userList');
+                
+                if (users && users.length > 0) {
+                    userList.innerHTML = users.map(user => `
+                        <div style="padding: 8px; border-bottom: 1px solid #eee;">
+                            <strong>${user.username}</strong> (${user.email})
+                            ${user.is_admin ? '<span style="background: #ffc107; padding: 2px 6px; border-radius: 3px; font-size: 11px;">ADMIN</span>' : ''}
+                            ${!user.is_active ? '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">INACTIVE</span>' : ''}
+                            <div style="font-size: 11px; color: #666; margin-top: 3px;">
+                                ID: ${user.id} • Created: ${new Date(user.created_at).toLocaleDateString()}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    userList.innerHTML = '<p style="text-align: center; color: #999;">No users found</p>';
+                }
+            } catch (error) {
+                alert('Error loading users: ' + error.message);
+            }
+        }
+        
+        async function createRole() {
+            const name = document.getElementById('newRoleName').value;
+            const description = document.getElementById('newRoleDesc').value;
+            
+            if (!name) {
+                alert('Please enter role name');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/roles`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                if (!response.ok) throw new Error('Failed to create role');
+                
+                document.getElementById('newRoleName').value = '';
+                document.getElementById('newRoleDesc').value = '';
+                loadRoles();
+                addEvent('Created role: ' + name);
+            } catch (error) {
+                alert('Error creating role: ' + error.message);
+            }
+        }
+        
+        async function loadRoles() {
+            try {
+                const response = await fetch(`${API_URL}/roles`, {
+                    headers: { 'Authorization': 'Bearer ' + authToken }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load roles');
+                
+                const roles = await response.json();
+                const roleList = document.getElementById('roleList');
+                
+                if (roles && roles.length > 0) {
+                    roleList.innerHTML = roles.map(role => `
+                        <div style="padding: 8px; border-bottom: 1px solid #eee;">
+                            <strong>${role.name}</strong>
+                            <div style="font-size: 12px; color: #666; margin-top: 3px;">
+                                ${role.description || 'No description'}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    roleList.innerHTML = '<p style="text-align: center; color: #999;">No roles found</p>';
+                }
+            } catch (error) {
+                alert('Error loading roles: ' + error.message);
+            }
+        }
+        
+        async function createPermission() {
+            const name = document.getElementById('newPermName').value;
+            const description = document.getElementById('newPermDesc').value;
+            
+            if (!name) {
+                alert('Please enter permission name');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/permissions`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + authToken
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                if (!response.ok) throw new Error('Failed to create permission');
+                
+                document.getElementById('newPermName').value = '';
+                document.getElementById('newPermDesc').value = '';
+                loadPermissions();
+                addEvent('Created permission: ' + name);
+            } catch (error) {
+                alert('Error creating permission: ' + error.message);
+            }
+        }
+        
+        async function loadPermissions() {
+            try {
+                const response = await fetch(`${API_URL}/permissions`, {
+                    headers: { 'Authorization': 'Bearer ' + authToken }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load permissions');
+                
+                const permissions = await response.json();
+                const permList = document.getElementById('permissionList');
+                
+                if (permissions && permissions.length > 0) {
+                    permList.innerHTML = permissions.map(perm => `
+                        <div style="padding: 8px; border-bottom: 1px solid #eee;">
+                            <strong>${perm.name}</strong>
+                            <div style="font-size: 12px; color: #666; margin-top: 3px;">
+                                ${perm.description || 'No description'}
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    permList.innerHTML = '<p style="text-align: center; color: #999;">No permissions found</p>';
+                }
+            } catch (error) {
+                alert('Error loading permissions: ' + error.message);
             }
         }
         
