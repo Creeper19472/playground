@@ -12,6 +12,7 @@ import (
 	"github.com/Creeper19472/playground/config"
 	"github.com/Creeper19472/playground/internal/db"
 	"github.com/Creeper19472/playground/internal/handlers"
+	"github.com/Creeper19472/playground/internal/middleware"
 	"github.com/Creeper19472/playground/internal/services"
 	"github.com/Creeper19472/playground/pkg/websocket"
 	"github.com/gorilla/mux"
@@ -57,6 +58,8 @@ func main() {
 	messageService := services.NewMessageService(database.DB)
 	issueService := services.NewIssueService(database.DB)
 	referenceService := services.NewReferenceService(database.DB)
+	authService := services.NewAuthService(database.DB, cfg.Auth.JWTSecret)
+	permissionService := services.NewPermissionService(database.DB)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
@@ -64,6 +67,8 @@ func main() {
 	issueHandler := handlers.NewIssueHandler(issueService, hub)
 	referenceHandler := handlers.NewReferenceHandler(referenceService)
 	wsHandler := handlers.NewWebSocketHandler(hub)
+	authHandler := handlers.NewAuthHandler(authService)
+	permissionHandler := handlers.NewPermissionHandler(permissionService)
 
 	// Setup router
 	router := mux.NewRouter()
@@ -71,27 +76,73 @@ func main() {
 	// API routes
 	api := router.PathPrefix("/api/v1").Subrouter()
 
-	// User routes
-	api.HandleFunc("/users", userHandler.CreateUser).Methods("POST")
-	api.HandleFunc("/users/{id}", userHandler.GetUser).Methods("GET")
-	api.HandleFunc("/users", userHandler.ListUsers).Methods("GET")
+	// Public auth routes (no authentication required)
+	api.HandleFunc("/auth/register", authHandler.Register).Methods("POST")
+	api.HandleFunc("/auth/login", authHandler.Login).Methods("POST")
 
-	// Message routes
-	api.HandleFunc("/messages", messageHandler.CreateMessage).Methods("POST")
-	api.HandleFunc("/messages/{id}", messageHandler.GetMessage).Methods("GET")
-	api.HandleFunc("/messages", messageHandler.ListMessages).Methods("GET")
+	// Protected auth routes (authentication required)
+	authRoutes := api.PathPrefix("/auth").Subrouter()
+	authRoutes.Use(middleware.AuthMiddleware(authService))
+	authRoutes.HandleFunc("/me", authHandler.Me).Methods("GET")
+	authRoutes.HandleFunc("/logout", authHandler.Logout).Methods("POST")
+	authRoutes.HandleFunc("/change-password", authHandler.ChangePassword).Methods("POST")
 
-	// Issue routes
-	api.HandleFunc("/issues", issueHandler.CreateIssue).Methods("POST")
-	api.HandleFunc("/issues/{id}", issueHandler.GetIssue).Methods("GET")
+	// User routes (protected)
+	protectedUserRoutes := api.PathPrefix("/users").Subrouter()
+	protectedUserRoutes.Use(middleware.AuthMiddleware(authService))
+	protectedUserRoutes.HandleFunc("", userHandler.ListUsers).Methods("GET")
+	protectedUserRoutes.HandleFunc("/{id}", userHandler.GetUser).Methods("GET")
+	protectedUserRoutes.HandleFunc("/{id}", userHandler.UpdateUser).Methods("PUT")
+	protectedUserRoutes.Handle("/{id}", middleware.AdminOnlyMiddleware(http.HandlerFunc(userHandler.DeleteUser))).Methods("DELETE")
+
+	// Message routes (authentication required)
+	protectedMessageRoutes := api.PathPrefix("/messages").Subrouter()
+	protectedMessageRoutes.Use(middleware.AuthMiddleware(authService))
+	protectedMessageRoutes.HandleFunc("", messageHandler.CreateMessage).Methods("POST")
+	protectedMessageRoutes.HandleFunc("/{id}", messageHandler.GetMessage).Methods("GET")
+	protectedMessageRoutes.HandleFunc("", messageHandler.ListMessages).Methods("GET")
+
+	// Issue routes (authentication required for create/vote, public for read)
 	api.HandleFunc("/issues", issueHandler.ListIssues).Methods("GET")
-	api.HandleFunc("/issues/{id}/vote", issueHandler.VoteIssue).Methods("POST")
-	api.HandleFunc("/issues/{id}/unvote", issueHandler.UnvoteIssue).Methods("POST")
+	api.HandleFunc("/issues/{id}", issueHandler.GetIssue).Methods("GET")
+	
+	protectedIssueRoutes := api.PathPrefix("/issues").Subrouter()
+	protectedIssueRoutes.Use(middleware.AuthMiddleware(authService))
+	protectedIssueRoutes.HandleFunc("", issueHandler.CreateIssue).Methods("POST")
+	protectedIssueRoutes.HandleFunc("/{id}", issueHandler.UpdateIssue).Methods("PUT")
+	protectedIssueRoutes.HandleFunc("/{id}", issueHandler.DeleteIssue).Methods("DELETE")
+	protectedIssueRoutes.HandleFunc("/{id}/vote", issueHandler.VoteIssue).Methods("POST")
+	protectedIssueRoutes.HandleFunc("/{id}/unvote", issueHandler.UnvoteIssue).Methods("POST")
 
-	// Reference routes
-	api.HandleFunc("/references", referenceHandler.CreateReference).Methods("POST")
-	api.HandleFunc("/references/{id}", referenceHandler.GetReference).Methods("GET")
+	// Reference routes (authentication required)
+	protectedReferenceRoutes := api.PathPrefix("/references").Subrouter()
+	protectedReferenceRoutes.Use(middleware.AuthMiddleware(authService))
+	protectedReferenceRoutes.HandleFunc("", referenceHandler.CreateReference).Methods("POST")
+	protectedReferenceRoutes.HandleFunc("/{id}", referenceHandler.GetReference).Methods("GET")
+	
 	api.HandleFunc("/issues/{issue_id}/references", referenceHandler.ListReferencesByIssue).Methods("GET")
+
+	// Permission management routes (admin only)
+	adminRoutes := api.PathPrefix("/admin").Subrouter()
+	adminRoutes.Use(middleware.AuthMiddleware(authService))
+	adminRoutes.Use(middleware.AdminOnlyMiddleware)
+	
+	// Permission CRUD
+	adminRoutes.HandleFunc("/permissions", permissionHandler.CreatePermission).Methods("POST")
+	adminRoutes.HandleFunc("/roles", permissionHandler.CreateRole).Methods("POST")
+	adminRoutes.HandleFunc("/groups", permissionHandler.CreateGroup).Methods("POST")
+	
+	// User permission management
+	adminRoutes.HandleFunc("/users/{user_id}/permissions", permissionHandler.GrantPermissionToUser).Methods("POST")
+	adminRoutes.HandleFunc("/users/{user_id}/permissions", permissionHandler.RevokePermissionFromUser).Methods("DELETE")
+	adminRoutes.HandleFunc("/users/{user_id}/roles", permissionHandler.AssignRoleToUser).Methods("POST")
+	adminRoutes.HandleFunc("/users/{user_id}/roles", permissionHandler.RemoveRoleFromUser).Methods("DELETE")
+	adminRoutes.HandleFunc("/users/{user_id}/groups", permissionHandler.AddUserToGroup).Methods("POST")
+	adminRoutes.HandleFunc("/users/{user_id}/groups", permissionHandler.RemoveUserFromGroup).Methods("DELETE")
+	
+	// Role and group permission management
+	adminRoutes.HandleFunc("/roles/{role_id}/permissions", permissionHandler.GrantPermissionToRole).Methods("POST")
+	adminRoutes.HandleFunc("/groups/{group_id}/permissions", permissionHandler.GrantPermissionToGroup).Methods("POST")
 
 	// WebSocket route
 	router.HandleFunc("/ws", wsHandler.HandleWebSocket)

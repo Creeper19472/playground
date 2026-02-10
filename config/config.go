@@ -12,12 +12,18 @@ import (
 type Config struct {
 	Server   ServerConfig   `yaml:"server"`
 	Database DatabaseConfig `yaml:"database"`
+	Auth     AuthConfig     `yaml:"auth"`
 }
 
 // ServerConfig contains server-specific configuration
 type ServerConfig struct {
 	Host string `yaml:"host"`
 	Port int    `yaml:"port"`
+}
+
+// AuthConfig contains authentication-specific configuration
+type AuthConfig struct {
+	JWTSecret string `yaml:"jwt_secret"`
 }
 
 // DatabaseConfig contains database-specific configuration
@@ -50,6 +56,9 @@ func LoadConfig(configPath string) (*Config, error) {
 			MaxOpenConns: 100,
 			MaxIdleConns: 10,
 			SSLMode:      "disable",
+		},
+		Auth: AuthConfig{
+			JWTSecret: "default-secret-change-in-production",
 		},
 	}
 
@@ -102,6 +111,9 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 	if sslMode := os.Getenv("DB_SSL_MODE"); sslMode != "" {
 		config.Database.SSLMode = sslMode
+	}
+	if jwtSecret := os.Getenv("JWT_SECRET"); jwtSecret != "" {
+		config.Auth.JWTSecret = jwtSecret
 	}
 
 	return config, nil
