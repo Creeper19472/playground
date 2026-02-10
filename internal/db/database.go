@@ -95,6 +95,9 @@ func NewDatabaseLegacy(dbPath string) (*Database, error) {
 func (d *Database) AutoMigrate() error {
 	err := d.DB.AutoMigrate(
 		&models.User{},
+		&models.Role{},
+		&models.Permission{},
+		&models.UserGroup{},
 		&models.Issue{},
 		&models.Vote{},
 		&models.Message{},

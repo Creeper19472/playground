@@ -30,6 +30,35 @@ func (s *IssueService) CreateIssue(userID uint, summary, description string) (*m
 	return s.GetIssueByID(issue.ID)
 }
 
+// UpdateIssue updates an issue
+func (s *IssueService) UpdateIssue(id uint, summary, description string) (*models.Issue, error) {
+	var issue models.Issue
+	if err := s.db.First(&issue, id).Error; err != nil {
+		return nil, fmt.Errorf("failed to find issue: %w", err)
+	}
+
+	if summary != "" {
+		issue.Summary = summary
+	}
+	if description != "" {
+		issue.Description = description
+	}
+
+	if err := s.db.Save(&issue).Error; err != nil {
+		return nil, fmt.Errorf("failed to update issue: %w", err)
+	}
+
+	return s.GetIssueByID(id)
+}
+
+// DeleteIssue soft deletes an issue
+func (s *IssueService) DeleteIssue(id uint) error {
+	if err := s.db.Delete(&models.Issue{}, id).Error; err != nil {
+		return fmt.Errorf("failed to delete issue: %w", err)
+	}
+	return nil
+}
+
 // GetIssueByID retrieves an issue by ID with user information
 func (s *IssueService) GetIssueByID(id uint) (*models.Issue, error) {
 	var issue models.Issue
