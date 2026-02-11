@@ -294,3 +294,39 @@ func (h *PermissionHandler) GrantPermissionToGroup(w http.ResponseWriter, r *htt
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Permission granted to group successfully"})
 }
+
+// ListPermissions lists all permissions (admin only)
+func (h *PermissionHandler) ListPermissions(w http.ResponseWriter, r *http.Request) {
+	permissions, err := h.permService.ListPermissions()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(permissions)
+}
+
+// ListRoles lists all roles (admin only)
+func (h *PermissionHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
+	roles, err := h.permService.ListRoles()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(roles)
+}
+
+// ListGroups lists all user groups (admin only)
+func (h *PermissionHandler) ListGroups(w http.ResponseWriter, r *http.Request) {
+	groups, err := h.permService.ListUserGroups()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(groups)
+}

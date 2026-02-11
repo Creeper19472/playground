@@ -218,3 +218,30 @@ func (s *PermissionService) GrantPermissionToGroup(groupID, permissionID uint) e
 
 	return s.db.Model(&group).Association("Permissions").Append(&permission)
 }
+
+// ListPermissions returns all permissions
+func (s *PermissionService) ListPermissions() ([]models.Permission, error) {
+	var permissions []models.Permission
+	if err := s.db.Find(&permissions).Error; err != nil {
+		return nil, fmt.Errorf("failed to list permissions: %w", err)
+	}
+	return permissions, nil
+}
+
+// ListRoles returns all roles
+func (s *PermissionService) ListRoles() ([]models.Role, error) {
+	var roles []models.Role
+	if err := s.db.Preload("Permissions").Find(&roles).Error; err != nil {
+		return nil, fmt.Errorf("failed to list roles: %w", err)
+	}
+	return roles, nil
+}
+
+// ListUserGroups returns all user groups
+func (s *PermissionService) ListUserGroups() ([]models.UserGroup, error) {
+	var groups []models.UserGroup
+	if err := s.db.Preload("Permissions").Find(&groups).Error; err != nil {
+		return nil, fmt.Errorf("failed to list groups: %w", err)
+	}
+	return groups, nil
+}

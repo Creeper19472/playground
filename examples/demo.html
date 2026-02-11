@@ -829,7 +829,7 @@
             }
             
             try {
-                const response = await fetch(`${API_URL}/roles`, {
+                const response = await fetch(`${API_URL}/admin/roles`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -851,7 +851,7 @@
         
         async function loadRoles() {
             try {
-                const response = await fetch(`${API_URL}/roles`, {
+                const response = await fetch(`${API_URL}/admin/roles`, {
                     headers: { 'Authorization': 'Bearer ' + authToken }
                 });
                 
@@ -887,13 +887,13 @@
             }
             
             try {
-                const response = await fetch(`${API_URL}/permissions`, {
+                const response = await fetch(`${API_URL}/admin/permissions`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + authToken
                     },
-                    body: JSON.stringify({ name, description })
+                    body: JSON.stringify({ name, description, resource: name, action: 'access' })
                 });
                 
                 if (!response.ok) throw new Error('Failed to create permission');
@@ -909,7 +909,7 @@
         
         async function loadPermissions() {
             try {
-                const response = await fetch(`${API_URL}/permissions`, {
+                const response = await fetch(`${API_URL}/admin/permissions`, {
                     headers: { 'Authorization': 'Bearer ' + authToken }
                 });
                 

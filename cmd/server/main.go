@@ -151,8 +151,11 @@ func main() {
 	adminRoutes.Use(middleware.AdminOnlyMiddleware)
 	
 	// Permission CRUD
+	adminRoutes.HandleFunc("/permissions", permissionHandler.ListPermissions).Methods("GET")
 	adminRoutes.HandleFunc("/permissions", permissionHandler.CreatePermission).Methods("POST")
+	adminRoutes.HandleFunc("/roles", permissionHandler.ListRoles).Methods("GET")
 	adminRoutes.HandleFunc("/roles", permissionHandler.CreateRole).Methods("POST")
+	adminRoutes.HandleFunc("/groups", permissionHandler.ListGroups).Methods("GET")
 	adminRoutes.HandleFunc("/groups", permissionHandler.CreateGroup).Methods("POST")
 	
 	// User permission management
