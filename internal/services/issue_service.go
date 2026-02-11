@@ -15,14 +15,22 @@ func NewIssueService(db *gorm.DB) *IssueService {
 	return &IssueService{db: db}
 }
 
-// CreateIssue creates a new issue
-func (s *IssueService) CreateIssue(userID uint, summary, description string) (*models.Issue, error) {
+// CreateIssue creates a new issue or proposition
+func (s *IssueService) CreateIssue(userID uint, issueType, summary, description string) (*models.Issue, error) {
+	if issueType == "" {
+		issueType = "issue"
+	}
+	if issueType != "issue" && issueType != "proposition" {
+		return nil, fmt.Errorf("invalid issue type: %s (must be 'issue' or 'proposition')", issueType)
+	}
+
 	issue := &models.Issue{
 		UserID:      userID,
+		Type:        issueType,
 		Summary:     summary,
 		Description: description,
 	}
-	
+
 	if err := s.db.Create(issue).Error; err != nil {
 		return nil, fmt.Errorf("failed to create issue: %w", err)
 	}
@@ -31,7 +39,7 @@ func (s *IssueService) CreateIssue(userID uint, summary, description string) (*m
 }
 
 // UpdateIssue updates an issue
-func (s *IssueService) UpdateIssue(id uint, summary, description string) (*models.Issue, error) {
+func (s *IssueService) UpdateIssue(id uint, summary, description, conclusion string, truthValue *bool) (*models.Issue, error) {
 	var issue models.Issue
 	if err := s.db.First(&issue, id).Error; err != nil {
 		return nil, fmt.Errorf("failed to find issue: %w", err)
@@ -42,6 +50,12 @@ func (s *IssueService) UpdateIssue(id uint, summary, description string) (*model
 	}
 	if description != "" {
 		issue.Description = description
+	}
+	if conclusion != "" {
+		issue.Conclusion = conclusion
+	}
+	if truthValue != nil {
+		issue.TruthValue = truthValue
 	}
 
 	if err := s.db.Save(&issue).Error; err != nil {

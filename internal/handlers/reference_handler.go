@@ -18,8 +18,9 @@ func NewReferenceHandler(referenceService *services.ReferenceService) *Reference
 }
 
 type CreateReferenceRequest struct {
-	UserID      uint  `json:"user_id"`
-	IssueID     uint  `json:"issue_id"`
+	UserID      uint   `json:"user_id"`
+	IssueID     uint   `json:"issue_id"`
+	OpinionID   *uint  `json:"opinion_id,omitempty"`
 	URL         string `json:"url"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -32,7 +33,7 @@ func (h *ReferenceHandler) CreateReference(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	reference, err := h.referenceService.CreateReference(req.UserID, req.IssueID, req.URL, req.Title, req.Description)
+	reference, err := h.referenceService.CreateReference(req.UserID, req.IssueID, req.OpinionID, req.URL, req.Title, req.Description)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

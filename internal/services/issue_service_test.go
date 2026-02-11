@@ -33,7 +33,7 @@ func TestIssueService_CreateIssue(t *testing.T) {
 
 	service := NewIssueService(db)
 
-	issue, err := service.CreateIssue(1, "Test Issue", "This is a test")
+	issue, err := service.CreateIssue(1, "issue", "Test Issue", "This is a test")
 	if err != nil {
 		t.Fatalf("Failed to create issue: %v", err)
 	}
@@ -44,6 +44,10 @@ func TestIssueService_CreateIssue(t *testing.T) {
 
 	if issue.Summary != "Test Issue" {
 		t.Errorf("Expected summary 'Test Issue', got '%s'", issue.Summary)
+	}
+
+	if issue.Type != "issue" {
+		t.Errorf("Expected type 'issue', got '%s'", issue.Type)
 	}
 
 	if issue.VoteCount != 0 {
@@ -59,7 +63,7 @@ func TestIssueService_VoteIssue(t *testing.T) {
 	service := NewIssueService(db)
 
 	// Create an issue
-	issue, err := service.CreateIssue(1, "Test Issue", "This is a test")
+	issue, err := service.CreateIssue(1, "issue", "Test Issue", "This is a test")
 	if err != nil {
 		t.Fatalf("Failed to create issue: %v", err)
 	}
@@ -95,7 +99,7 @@ func TestIssueService_UnvoteIssue(t *testing.T) {
 	service := NewIssueService(db)
 
 	// Create an issue
-	issue, err := service.CreateIssue(1, "Test Issue", "This is a test")
+	issue, err := service.CreateIssue(1, "issue", "Test Issue", "This is a test")
 	if err != nil {
 		t.Fatalf("Failed to create issue: %v", err)
 	}
@@ -131,8 +135,8 @@ func TestIssueService_ListIssues(t *testing.T) {
 	service := NewIssueService(db)
 
 	// Create multiple issues
-	issue1, _ := service.CreateIssue(1, "Issue 1", "First issue")
-	issue2, _ := service.CreateIssue(1, "Issue 2", "Second issue")
+	issue1, _ := service.CreateIssue(1, "issue", "Issue 1", "First issue")
+	issue2, _ := service.CreateIssue(1, "issue", "Issue 2", "Second issue")
 
 	// Vote on issue 2 to make it rank higher
 	service.VoteIssue(2, issue2.ID)
@@ -154,5 +158,92 @@ func TestIssueService_ListIssues(t *testing.T) {
 
 	if issues[1].ID != issue1.ID {
 		t.Errorf("Expected second issue to be issue1 (ID %d), got ID %d", issue1.ID, issues[1].ID)
+	}
+}
+
+func TestIssueService_CreateProposition(t *testing.T) {
+	db := setupIssueTestDB(t)
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	service := NewIssueService(db)
+
+	issue, err := service.CreateIssue(1, "proposition", "The earth is round", "Scientific fact")
+	if err != nil {
+		t.Fatalf("Failed to create proposition: %v", err)
+	}
+
+	if issue.Type != "proposition" {
+		t.Errorf("Expected type 'proposition', got '%s'", issue.Type)
+	}
+}
+
+func TestIssueService_InvalidType(t *testing.T) {
+	db := setupIssueTestDB(t)
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	service := NewIssueService(db)
+
+	_, err := service.CreateIssue(1, "invalid", "Bad type", "Should fail")
+	if err == nil {
+		t.Error("Expected error for invalid type, got nil")
+	}
+}
+
+func TestIssueService_UpdateWithConclusion(t *testing.T) {
+	db := setupIssueTestDB(t)
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	service := NewIssueService(db)
+
+	issue, _ := service.CreateIssue(1, "issue", "Test Issue", "Description")
+
+	updated, err := service.UpdateIssue(issue.ID, "", "", "The conclusion is X", nil)
+	if err != nil {
+		t.Fatalf("Failed to update issue: %v", err)
+	}
+
+	if updated.Conclusion != "The conclusion is X" {
+		t.Errorf("Expected conclusion 'The conclusion is X', got '%s'", updated.Conclusion)
+	}
+}
+
+func TestIssueService_UpdateWithTruthValue(t *testing.T) {
+	db := setupIssueTestDB(t)
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	service := NewIssueService(db)
+
+	issue, _ := service.CreateIssue(1, "proposition", "The earth is round", "Scientific fact")
+
+	truthValue := true
+	updated, err := service.UpdateIssue(issue.ID, "", "", "", &truthValue)
+	if err != nil {
+		t.Fatalf("Failed to update issue: %v", err)
+	}
+
+	if updated.TruthValue == nil || *updated.TruthValue != true {
+		t.Error("Expected truth value to be true")
+	}
+}
+
+func TestIssueService_DefaultType(t *testing.T) {
+	db := setupIssueTestDB(t)
+	sqlDB, _ := db.DB()
+	defer sqlDB.Close()
+
+	service := NewIssueService(db)
+
+	// Empty type should default to "issue"
+	issue, err := service.CreateIssue(1, "", "Default type", "Should be issue")
+	if err != nil {
+		t.Fatalf("Failed to create issue: %v", err)
+	}
+
+	if issue.Type != "issue" {
+		t.Errorf("Expected default type 'issue', got '%s'", issue.Type)
 	}
 }

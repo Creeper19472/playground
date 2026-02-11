@@ -102,6 +102,8 @@ func (d *Database) AutoMigrate() error {
 		&models.Vote{},
 		&models.Message{},
 		&models.Reference{},
+		&models.Opinion{},
+		&models.Stance{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to auto migrate: %w", err)

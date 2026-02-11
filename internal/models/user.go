@@ -20,13 +20,15 @@ type User struct {
 	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
 	
 	// Relationships
-	Issues     []Issue         `json:"-" gorm:"foreignKey:UserID"`
-	Messages   []Message       `json:"-" gorm:"foreignKey:UserID"`
-	Votes      []Vote          `json:"-" gorm:"foreignKey:UserID"`
-	References []Reference     `json:"-" gorm:"foreignKey:UserID"`
-	Roles      []Role          `json:"-" gorm:"many2many:user_roles;"`
-	Groups     []UserGroup     `json:"-" gorm:"many2many:user_group_members;"`
-	Permissions []Permission   `json:"-" gorm:"many2many:user_permissions;"`
+	Issues      []Issue      `json:"-" gorm:"foreignKey:UserID"`
+	Messages    []Message    `json:"-" gorm:"foreignKey:UserID"`
+	Votes       []Vote       `json:"-" gorm:"foreignKey:UserID"`
+	References  []Reference  `json:"-" gorm:"foreignKey:UserID"`
+	Opinions    []Opinion    `json:"-" gorm:"foreignKey:UserID"`
+	Stances     []Stance     `json:"-" gorm:"foreignKey:UserID"`
+	Roles       []Role       `json:"-" gorm:"many2many:user_roles;"`
+	Groups      []UserGroup  `json:"-" gorm:"many2many:user_group_members;"`
+	Permissions []Permission `json:"-" gorm:"many2many:user_permissions;"`
 }
 
 // SetPassword hashes and sets the user's password
