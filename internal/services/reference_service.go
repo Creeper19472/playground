@@ -15,11 +15,12 @@ func NewReferenceService(db *gorm.DB) *ReferenceService {
 	return &ReferenceService{db: db}
 }
 
-// CreateReference creates a new reference
-func (s *ReferenceService) CreateReference(userID, issueID uint, url, title, description string) (*models.Reference, error) {
+// CreateReference creates a new reference (fact)
+func (s *ReferenceService) CreateReference(userID, issueID uint, opinionID *uint, url, title, description string) (*models.Reference, error) {
 	reference := &models.Reference{
 		UserID:      userID,
 		IssueID:     issueID,
+		OpinionID:   opinionID,
 		URL:         url,
 		Title:       title,
 		Description: description,
@@ -48,6 +49,17 @@ func (s *ReferenceService) ListReferencesByIssue(issueID uint) ([]*models.Refere
 		Order("created_at DESC").
 		Find(&references).Error; err != nil {
 		return nil, fmt.Errorf("failed to list references: %w", err)
+	}
+	return references, nil
+}
+
+// ListReferencesByOpinion retrieves all references for a specific opinion
+func (s *ReferenceService) ListReferencesByOpinion(opinionID uint) ([]*models.Reference, error) {
+	var references []*models.Reference
+	if err := s.db.Where("opinion_id = ?", opinionID).
+		Order("created_at DESC").
+		Find(&references).Error; err != nil {
+		return nil, fmt.Errorf("failed to list references by opinion: %w", err)
 	}
 	return references, nil
 }

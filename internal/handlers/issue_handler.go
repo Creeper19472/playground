@@ -25,7 +25,8 @@ func NewIssueHandler(issueService *services.IssueService, hub *ws.Hub) *IssueHan
 }
 
 type CreateIssueRequest struct {
-	UserID      uint  `json:"user_id"`
+	UserID      uint   `json:"user_id"`
+	Type        string `json:"type"` // "issue" or "proposition"
 	Summary     string `json:"summary"`
 	Description string `json:"description"`
 }
@@ -33,6 +34,8 @@ type CreateIssueRequest struct {
 type UpdateIssueRequest struct {
 	Summary     string `json:"summary,omitempty"`
 	Description string `json:"description,omitempty"`
+	Conclusion  string `json:"conclusion,omitempty"`
+	TruthValue  *bool  `json:"truth_value,omitempty"`
 }
 
 type VoteRequest struct {
@@ -46,7 +49,7 @@ func (h *IssueHandler) CreateIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	issue, err := h.issueService.CreateIssue(req.UserID, req.Summary, req.Description)
+	issue, err := h.issueService.CreateIssue(req.UserID, req.Type, req.Summary, req.Description)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -92,7 +95,7 @@ func (h *IssueHandler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedIssue, err := h.issueService.UpdateIssue(uint(id), req.Summary, req.Description)
+	updatedIssue, err := h.issueService.UpdateIssue(uint(id), req.Summary, req.Description, req.Conclusion, req.TruthValue)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

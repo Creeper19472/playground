@@ -81,6 +81,8 @@ func main() {
 	messageService := services.NewMessageService(database.DB)
 	issueService := services.NewIssueService(database.DB)
 	referenceService := services.NewReferenceService(database.DB)
+	opinionService := services.NewOpinionService(database.DB)
+	stanceService := services.NewStanceService(database.DB)
 	authService := services.NewAuthService(database.DB, cfg.Auth.JWTSecret)
 	permissionService := services.NewPermissionService(database.DB)
 
@@ -89,6 +91,8 @@ func main() {
 	messageHandler := handlers.NewMessageHandler(messageService, hub)
 	issueHandler := handlers.NewIssueHandler(issueService, hub)
 	referenceHandler := handlers.NewReferenceHandler(referenceService)
+	opinionHandler := handlers.NewOpinionHandler(opinionService, hub)
+	stanceHandler := handlers.NewStanceHandler(stanceService, hub)
 	wsHandler := handlers.NewWebSocketHandler(hub)
 	authHandler := handlers.NewAuthHandler(authService)
 	permissionHandler := handlers.NewPermissionHandler(permissionService)
@@ -144,6 +148,31 @@ func main() {
 	protectedReferenceRoutes.HandleFunc("/{id}", referenceHandler.GetReference).Methods("GET")
 	
 	api.HandleFunc("/issues/{issue_id}/references", referenceHandler.ListReferencesByIssue).Methods("GET")
+
+	// Opinion routes (authentication required for create/update/delete, public for read)
+	api.HandleFunc("/issues/{issue_id}/opinions", opinionHandler.ListOpinionsByIssue).Methods("GET")
+	api.HandleFunc("/opinions/{id}", opinionHandler.GetOpinion).Methods("GET")
+	api.HandleFunc("/opinions/{id}/supports", opinionHandler.GetSupports).Methods("GET")
+	api.HandleFunc("/opinions/{id}/supported-by", opinionHandler.GetSupportedBy).Methods("GET")
+
+	protectedOpinionRoutes := api.PathPrefix("/opinions").Subrouter()
+	protectedOpinionRoutes.Use(middleware.AuthMiddleware(authService))
+	protectedOpinionRoutes.HandleFunc("", opinionHandler.CreateOpinion).Methods("POST")
+	protectedOpinionRoutes.HandleFunc("/{id}", opinionHandler.UpdateOpinion).Methods("PUT")
+	protectedOpinionRoutes.HandleFunc("/{id}", opinionHandler.DeleteOpinion).Methods("DELETE")
+	protectedOpinionRoutes.HandleFunc("/support", opinionHandler.AddSupport).Methods("POST")
+	protectedOpinionRoutes.HandleFunc("/support", opinionHandler.RemoveSupport).Methods("DELETE")
+
+	// Stance routes (authentication required for create/update/delete, public for read)
+	api.HandleFunc("/opinions/{opinion_id}/stances", stanceHandler.ListStancesByOpinion).Methods("GET")
+	api.HandleFunc("/references/{reference_id}/stances", stanceHandler.ListStancesByReference).Methods("GET")
+	api.HandleFunc("/stances/{id}", stanceHandler.GetStance).Methods("GET")
+
+	protectedStanceRoutes := api.PathPrefix("/stances").Subrouter()
+	protectedStanceRoutes.Use(middleware.AuthMiddleware(authService))
+	protectedStanceRoutes.HandleFunc("", stanceHandler.CreateStance).Methods("POST")
+	protectedStanceRoutes.HandleFunc("/{id}", stanceHandler.UpdateStance).Methods("PUT")
+	protectedStanceRoutes.HandleFunc("/{id}", stanceHandler.DeleteStance).Methods("DELETE")
 
 	// Permission management routes (admin only)
 	adminRoutes := api.PathPrefix("/admin").Subrouter()
