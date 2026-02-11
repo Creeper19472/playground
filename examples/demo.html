@@ -3,966 +3,1239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Playground - Real-time Collaboration Demo (with Auth)</title>
+    <title>Playground — Deliberation Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --clr-bg: #f7f5f0;
+            --clr-surface: #ffffff;
+            --clr-border: #e2ddd5;
+            --clr-text: #2c2c2c;
+            --clr-text-muted: #7a7570;
+            --clr-accent: #6b4c3b;
+            --clr-accent-hover: #543a2d;
+            --clr-issue: #4a6fa5;
+            --clr-proposition: #8e6b3e;
+            --clr-opinion: #5b8a6f;
+            --clr-stance-support: #4caf50;
+            --clr-stance-oppose: #e25555;
+            --clr-stance-doubt: #e6a23c;
+            --clr-danger: #c0392b;
+            --clr-danger-hover: #a93226;
+            --radius: 8px;
+            --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 2px 12px rgba(0,0,0,0.04);
+            --shadow-lg: 0 4px 24px rgba(0,0,0,0.08);
+            --font-serif: 'Noto Serif', 'Source Han Serif SC', 'Source Han Serif', 'Noto Serif CJK SC', 'Songti SC', 'SimSun', Georgia, 'Times New Roman', serif;
         }
-        
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
+            font-family: var(--font-serif);
+            background: var(--clr-bg);
+            color: var(--clr-text);
+            line-height: 1.7;
+            min-height: 100vh;
         }
-        
-        .container {
-            max-width: 1200px;
+
+        /* ── Header ── */
+        .site-header {
+            background: var(--clr-surface);
+            border-bottom: 1px solid var(--clr-border);
+            padding: 18px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .site-header .inner {
+            max-width: 1100px;
             margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
+        .site-header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: var(--clr-accent);
         }
-        
-        .status {
-            padding: 10px;
-            border-radius: 4px;
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-badge {
+            font-size: 14px;
+            color: var(--clr-text-muted);
+        }
+        .user-badge strong { color: var(--clr-text); }
+        .admin-tag {
+            display: inline-block;
+            background: var(--clr-proposition);
+            color: #fff;
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 3px;
+            margin-left: 4px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+
+        /* ── Layout ── */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 28px 24px 60px;
+        }
+
+        /* ── Status bar ── */
+        .status-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .status-pill {
+            font-size: 13px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .status-pill.connected { background: #e8f5e9; color: #2e7d32; }
+        .status-pill.disconnected { background: #fce4ec; color: #c62828; }
+        .status-pill.authenticated { background: #e3f2fd; color: #1565c0; }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--clr-surface);
+            border: 1px solid var(--clr-border);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
             margin-bottom: 20px;
         }
-        
-        .status.connected {
-            background: #d4edda;
-            color: #155724;
+        .card h2 {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--clr-accent);
+            letter-spacing: 0.01em;
         }
-        
-        .status.disconnected {
-            background: #f8d7da;
-            color: #721c24;
+        .card h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--clr-text);
         }
-        
-        .status.authenticated {
-            background: #cce5ff;
-            color: #004085;
-        }
-        
-        .grid {
+
+        /* ── Grid ── */
+        .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
-            margin-bottom: 20px;
         }
-        
-        .panel {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
         }
-        
-        .panel h2 {
-            color: #555;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-        
-        input, textarea, button, select {
+
+        /* ── Forms ── */
+        input, textarea, select {
             width: 100%;
-            padding: 10px;
+            padding: 10px 14px;
             margin-bottom: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--clr-border);
+            border-radius: 6px;
+            font-family: var(--font-serif);
+            font-size: 14px;
+            color: var(--clr-text);
+            background: #fcfbf9;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--clr-accent);
+            background: #fff;
+        }
+        textarea { resize: vertical; }
+
+        /* ── Buttons ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 9px 20px;
+            border: none;
+            border-radius: 6px;
+            font-family: var(--font-serif);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            letter-spacing: 0.01em;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-primary {
+            background: var(--clr-accent);
+            color: #fff;
+        }
+        .btn-primary:hover:not(:disabled) { background: var(--clr-accent-hover); }
+
+        .btn-secondary {
+            background: #ebe7e0;
+            color: var(--clr-text);
+        }
+        .btn-secondary:hover:not(:disabled) { background: #ddd8cf; }
+
+        .btn-danger {
+            background: var(--clr-danger);
+            color: #fff;
+        }
+        .btn-danger:hover:not(:disabled) { background: var(--clr-danger-hover); }
+
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 12px;
             border-radius: 4px;
+        }
+
+        .btn-support { background: var(--clr-stance-support); color: #fff; }
+        .btn-support:hover { background: #43a047; }
+        .btn-oppose { background: var(--clr-stance-oppose); color: #fff; }
+        .btn-oppose:hover { background: #d32f2f; }
+        .btn-doubt { background: var(--clr-stance-doubt); color: #fff; }
+        .btn-doubt:hover { background: #d4942e; }
+
+        .btn-group { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+        .full-width { width: 100%; }
+
+        /* ── Tabs ── */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid var(--clr-border);
+            padding-bottom: 0;
+        }
+        .tab-btn {
+            padding: 8px 18px;
+            font-family: var(--font-serif);
+            font-size: 14px;
+            font-weight: 600;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+            color: var(--clr-text-muted);
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .tab-btn:hover { color: var(--clr-text); }
+        .tab-btn.active {
+            color: var(--clr-accent);
+            border-bottom-color: var(--clr-accent);
+        }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* ── Issue / Proposition items ── */
+        .scrollable {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .scrollable::-webkit-scrollbar { width: 5px; }
+        .scrollable::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+        .item {
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: var(--radius);
+            border: 1px solid var(--clr-border);
+            background: #fdfcfa;
+            transition: box-shadow 0.2s;
+        }
+        .item:hover { box-shadow: var(--shadow); }
+
+        .item-type-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-right: 6px;
+        }
+        .badge-issue { background: #e3edf7; color: var(--clr-issue); }
+        .badge-proposition { background: #f5ede0; color: var(--clr-proposition); }
+
+        .item-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .item-meta {
+            font-size: 12px;
+            color: var(--clr-text-muted);
+            margin-bottom: 6px;
+        }
+        .item-desc {
+            font-size: 14px;
+            margin: 8px 0;
+            color: #444;
+        }
+        .vote-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--clr-issue);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 12px;
+        }
+        .truth-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+        .truth-true { background: #e8f5e9; color: #2e7d32; }
+        .truth-false { background: #fce4ec; color: #c62828; }
+        .truth-undetermined { background: #f5f5f5; color: #888; }
+
+        .conclusion-text {
+            font-style: italic;
+            color: var(--clr-accent);
+            border-left: 3px solid var(--clr-accent);
+            padding-left: 12px;
+            margin: 8px 0;
             font-size: 14px;
         }
-        
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        
-        button:hover {
-            background: #0056b3;
-        }
-        
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        
-        button.secondary {
-            background: #6c757d;
-        }
-        
-        button.secondary:hover {
-            background: #545b62;
-        }
-        
-        button.danger {
-            background: #dc3545;
-        }
-        
-        button.danger:hover {
-            background: #c82333;
-        }
-        
-        .issue-list, .message-list, .event-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            padding: 10px;
-        }
-        
-        .issue-item, .message-item, .event-item {
-            padding: 10px;
+
+        /* ── Opinion items ── */
+        .opinion-item {
+            padding: 14px;
             margin-bottom: 10px;
-            border-radius: 4px;
-            background: #f9f9f9;
+            border-radius: var(--radius);
+            border: 1px solid #d7e5d7;
+            border-left: 4px solid var(--clr-opinion);
+            background: #fafdf9;
         }
-        
-        .issue-item {
-            border-left: 4px solid #007bff;
+        .opinion-content {
+            font-size: 14px;
+            margin-bottom: 6px;
         }
-        
-        .message-item {
-            border-left: 4px solid #28a745;
+        .opinion-meta {
+            font-size: 12px;
+            color: var(--clr-text-muted);
         }
-        
-        .event-item {
-            border-left: 4px solid #ffc107;
+
+        /* ── Reference items ── */
+        .ref-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border: 1px solid #e0dcd5;
+            background: #fefdfb;
+        }
+        .ref-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .ref-url {
+            font-size: 12px;
+            color: var(--clr-issue);
+            word-break: break-all;
+        }
+
+        /* ── Stance items ── */
+        .stance-item {
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            border-radius: 6px;
             font-size: 13px;
-        }
-        
-        .vote-count {
-            display: inline-block;
-            background: #007bff;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            margin-left: 10px;
-        }
-        
-        .issue-summary {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .issue-meta {
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .vote-btn, .action-btn {
-            width: auto;
-            padding: 5px 15px;
-            font-size: 12px;
-            margin-right: 5px;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .user-info {
-            background: #e7f3ff;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        
-        .tab-container {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
+            align-items: flex-start;
         }
-        
-        .tab {
-            padding: 8px 16px;
-            background: #e9ecef;
+        .stance-support { background: #e8f5e9; border-left: 3px solid var(--clr-stance-support); }
+        .stance-oppose { background: #fce4ec; border-left: 3px solid var(--clr-stance-oppose); }
+        .stance-doubt { background: #fff8e1; border-left: 3px solid var(--clr-stance-doubt); }
+        .stance-type-label {
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+            min-width: 56px;
+        }
+
+        /* ── Message items ── */
+        .msg-item {
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            background: #f8f7f4;
+            border: 1px solid var(--clr-border);
+        }
+        .msg-item strong { color: var(--clr-accent); }
+
+        /* ── Event items ── */
+        .event-item {
+            padding: 8px 14px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            background: #fffdf5;
+            border-left: 3px solid var(--clr-proposition);
+            font-size: 13px;
+        }
+
+        /* ── Modal / Detail view ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 200;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 60px 20px;
+            overflow-y: auto;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: var(--clr-surface);
+            border-radius: var(--radius);
+            max-width: 720px;
+            width: 100%;
+            box-shadow: var(--shadow-lg);
+            padding: 32px;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
             border: none;
-            border-radius: 4px;
+            font-size: 20px;
             cursor: pointer;
+            color: var(--clr-text-muted);
+            font-family: var(--font-serif);
+        }
+        .modal-close:hover { color: var(--clr-text); }
+
+        .hidden { display: none !important; }
+
+        .empty-text {
+            text-align: center;
+            color: var(--clr-text-muted);
+            font-style: italic;
+            padding: 20px;
             font-size: 14px;
         }
-        
-        .tab.active {
-            background: #007bff;
-            color: white;
+
+        .divider {
+            border: none;
+            border-top: 1px solid var(--clr-border);
+            margin: 16px 0;
         }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--clr-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
+
+    <!-- Header -->
+    <header class="site-header">
+        <div class="inner">
+            <h1>✦ Playground</h1>
+            <div class="header-right">
+                <div id="headerUserInfo" class="hidden">
+                    <span class="user-badge">
+                        <strong id="headerUsername"></strong>
+                        <span id="headerAdminTag" class="admin-tag hidden">ADMIN</span>
+                    </span>
+                </div>
+                <button id="headerLogoutBtn" class="btn btn-secondary btn-sm hidden" onclick="logout()">Sign Out</button>
+                <button id="headerPwBtn" class="btn btn-secondary btn-sm hidden" onclick="showPasswordChange()">Password</button>
+            </div>
+        </div>
+    </header>
+
     <div class="container">
-        <h1>🎮 Playground - Real-time Collaboration Demo (with Auth)</h1>
-        <div id="authStatus" class="status disconnected">Not logged in</div>
-        <div id="wsStatus" class="status disconnected hidden">WebSocket: Disconnected</div>
-        
-        <!-- Authentication Section -->
+        <!-- Status -->
+        <div class="status-bar">
+            <span id="authStatusPill" class="status-pill disconnected">Not signed in</span>
+            <span id="wsStatusPill" class="status-pill disconnected hidden">WebSocket: ✗</span>
+        </div>
+
+        <!-- ═══ Auth Section ═══ -->
         <div id="authSection">
-            <div class="panel">
-                <h2>🔐 Authentication</h2>
-                <div class="tab-container">
-                    <button class="tab active" onclick="showAuthTab('login')">Login</button>
-                    <button class="tab" onclick="showAuthTab('register')">Register</button>
+            <div class="card" style="max-width: 440px; margin: 40px auto;">
+                <h2>Sign In</h2>
+                <div class="tab-bar" id="authTabBar">
+                    <button class="tab-btn active" onclick="showAuthTab('login')">Login</button>
+                    <button class="tab-btn" onclick="showAuthTab('register')">Register</button>
                 </div>
-                
-                <div id="loginTab" class="tab-content active">
-                    <input type="text" id="loginUsername" placeholder="Username or Email">
+                <div id="loginPanel" class="tab-panel active">
+                    <input type="text" id="loginUsername" placeholder="Username or email">
                     <input type="password" id="loginPassword" placeholder="Password">
-                    <button onclick="login()">Login</button>
+                    <button class="btn btn-primary full-width" onclick="login()">Login</button>
                 </div>
-                
-                <div id="registerTab" class="tab-content">
+                <div id="registerPanel" class="tab-panel">
                     <input type="text" id="regUsername" placeholder="Username">
                     <input type="email" id="regEmail" placeholder="Email">
                     <input type="password" id="regPassword" placeholder="Password">
-                    <input type="password" id="regPasswordConfirm" placeholder="Confirm Password">
-                    <button onclick="register()">Register</button>
+                    <input type="password" id="regPasswordConfirm" placeholder="Confirm password">
+                    <button class="btn btn-primary full-width" onclick="register()">Create Account</button>
                 </div>
             </div>
         </div>
-        
-        <!-- Main Application (hidden until logged in) -->
+
+        <!-- ═══ App Section ═══ -->
         <div id="appSection" class="hidden">
-            <div class="panel">
-                <div class="user-info">
-                    <strong>👤 Logged in as:</strong> <span id="currentUsername"></span>
-                    <span id="adminBadge" class="hidden" style="background: #ffc107; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-left: 8px;">ADMIN</span>
-                    <button class="secondary" style="float: right; width: auto; padding: 5px 15px; margin: 0;" onclick="logout()">Logout</button>
-                    <button class="secondary" style="float: right; width: auto; padding: 5px 15px; margin: 0 10px 0 0;" onclick="showPasswordChange()">Change Password</button>
+
+            <!-- Create forms -->
+            <div class="grid-2">
+                <div class="card">
+                    <h2>New Issue / Proposition</h2>
+                    <select id="issueType">
+                        <option value="issue">Issue — open for discussion</option>
+                        <option value="proposition">Proposition — to be determined true/false</option>
+                    </select>
+                    <input type="text" id="issueSummary" placeholder="Summary">
+                    <textarea id="issueDescription" placeholder="Description…" rows="2"></textarea>
+                    <button class="btn btn-primary full-width" onclick="createIssue()">Create</button>
                 </div>
-            </div>
-            
-            <div class="grid">
-                <div class="panel">
-                    <h2>💬 Send Message</h2>
-                    <textarea id="messageContent" placeholder="Your message..." rows="3"></textarea>
-                    <button onclick="sendMessage()">Send Message</button>
-                </div>
-                
-                <div class="panel">
-                    <h2>📋 Create Issue/Topic</h2>
-                    <input type="text" id="issueSummary" placeholder="Issue summary">
-                    <textarea id="issueDescription" placeholder="Description..." rows="2"></textarea>
-                    <button onclick="createIssue()">Create Issue</button>
-                </div>
-            </div>
-            
-            <div class="grid">
-                <div class="panel">
-                    <h2>📚 Issues (Ranked by Votes)</h2>
-                    <div id="issueList" class="issue-list">
-                        <p style="text-align: center; color: #999;">No issues yet</p>
-                    </div>
-                </div>
-                
-                <div class="panel">
-                    <h2>💬 Messages</h2>
-                    <div id="messageList" class="message-list">
-                        <p style="text-align: center; color: #999;">No messages yet</p>
+                <div class="card">
+                    <h2>Messages</h2>
+                    <textarea id="messageContent" placeholder="Write a message…" rows="2"></textarea>
+                    <button class="btn btn-primary full-width" onclick="sendMessage()">Send</button>
+                    <hr class="divider">
+                    <div id="messageList" class="scrollable" style="max-height:200px;">
+                        <p class="empty-text">No messages yet</p>
                     </div>
                 </div>
             </div>
-            
-            <div class="panel">
-                <h2>🔔 Real-time Events</h2>
-                <div id="eventList" class="event-list">
-                    <p style="text-align: center; color: #999;">Waiting for events...</p>
+
+            <!-- Issues & Propositions list -->
+            <div class="card">
+                <h2>Issues &amp; Propositions</h2>
+                <div class="tab-bar" id="issueTabBar">
+                    <button class="tab-btn active" onclick="filterIssues('all')">All</button>
+                    <button class="tab-btn" onclick="filterIssues('issue')">Issues</button>
+                    <button class="tab-btn" onclick="filterIssues('proposition')">Propositions</button>
+                </div>
+                <div id="issueList" class="scrollable">
+                    <p class="empty-text">No items yet</p>
                 </div>
             </div>
-            
-            <!-- Admin Panel (only visible to admins) -->
-            <div id="adminPanel" class="hidden">
-                <div class="panel">
-                    <h2>⚙️ Admin Panel</h2>
-                    <div class="tab-container">
-                        <button class="tab active" onclick="showAdminTab('users')">Users</button>
-                        <button class="tab" onclick="showAdminTab('roles')">Roles</button>
-                        <button class="tab" onclick="showAdminTab('permissions')">Permissions</button>
+
+            <!-- Real-time events -->
+            <div class="card">
+                <h2>Live Events</h2>
+                <div id="eventList" class="scrollable" style="max-height:180px;">
+                    <p class="empty-text">Waiting for events…</p>
+                </div>
+            </div>
+
+            <!-- Admin Panel -->
+            <div id="adminPanel" class="card hidden">
+                <h2>Administration</h2>
+                <div class="tab-bar" id="adminTabBar">
+                    <button class="tab-btn active" onclick="showAdminTab('users')">Users</button>
+                    <button class="tab-btn" onclick="showAdminTab('roles')">Roles</button>
+                    <button class="tab-btn" onclick="showAdminTab('permissions')">Permissions</button>
+                </div>
+                <div id="usersAdminTab" class="tab-panel active">
+                    <button class="btn btn-secondary btn-sm" onclick="loadUsers()">Refresh</button>
+                    <div id="userList" style="margin-top: 10px;">
+                        <p class="empty-text">Click Refresh to load</p>
                     </div>
-                    
-                    <div id="usersAdminTab" class="tab-content active">
-                        <h3 style="margin-bottom: 10px;">User Management</h3>
-                        <button onclick="loadUsers()">Refresh Users</button>
-                        <div id="userList" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-top: 10px;">
-                            <p style="text-align: center; color: #999;">Click refresh to load users</p>
-                        </div>
+                </div>
+                <div id="rolesAdminTab" class="tab-panel">
+                    <input type="text" id="newRoleName" placeholder="Role name">
+                    <input type="text" id="newRoleDesc" placeholder="Description">
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-sm" onclick="createRole()">Create Role</button>
+                        <button class="btn btn-secondary btn-sm" onclick="loadRoles()">Refresh</button>
                     </div>
-                    
-                    <div id="rolesAdminTab" class="tab-content">
-                        <h3 style="margin-bottom: 10px;">Role Management</h3>
-                        <input type="text" id="newRoleName" placeholder="Role name">
-                        <input type="text" id="newRoleDesc" placeholder="Description">
-                        <button onclick="createRole()">Create Role</button>
-                        <button class="secondary" onclick="loadRoles()">Refresh Roles</button>
-                        <div id="roleList" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-top: 10px;">
-                            <p style="text-align: center; color: #999;">Click refresh to load roles</p>
-                        </div>
+                    <div id="roleList" style="margin-top: 10px;">
+                        <p class="empty-text">Click Refresh to load</p>
                     </div>
-                    
-                    <div id="permissionsAdminTab" class="tab-content">
-                        <h3 style="margin-bottom: 10px;">Permission Management</h3>
-                        <input type="text" id="newPermName" placeholder="Permission name (e.g., edit_issues)">
-                        <input type="text" id="newPermResource" placeholder="Resource (e.g., issues, users)">
-                        <input type="text" id="newPermAction" placeholder="Action (e.g., create, read, update, delete)">
-                        <input type="text" id="newPermDesc" placeholder="Description">
-                        <button onclick="createPermission()">Create Permission</button>
-                        <button class="secondary" onclick="loadPermissions()">Refresh Permissions</button>
-                        <div id="permissionList" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-top: 10px;">
-                            <p style="text-align: center; color: #999;">Click refresh to load permissions</p>
-                        </div>
+                </div>
+                <div id="permissionsAdminTab" class="tab-panel">
+                    <input type="text" id="newPermName" placeholder="Permission name">
+                    <input type="text" id="newPermResource" placeholder="Resource">
+                    <input type="text" id="newPermAction" placeholder="Action">
+                    <input type="text" id="newPermDesc" placeholder="Description">
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-sm" onclick="createPermission()">Create</button>
+                        <button class="btn btn-secondary btn-sm" onclick="loadPermissions()">Refresh</button>
+                    </div>
+                    <div id="permissionList" style="margin-top: 10px;">
+                        <p class="empty-text">Click Refresh to load</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <script>
-        let ws = null;
-        let currentUser = null;
-        let authToken = null;
-        const API_URL = 'http://localhost:8080/api/v1';
-        const AUTH_URL = 'http://localhost:8080/api/v1/auth';
-        const WS_URL = 'ws://localhost:8080/ws';
-        
-        // Auth Tab Switching
-        function showAuthTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            if (tab === 'login') {
-                document.querySelector('.tab:nth-child(1)').classList.add('active');
-                document.getElementById('loginTab').classList.add('active');
-            } else {
-                document.querySelector('.tab:nth-child(2)').classList.add('active');
-                document.getElementById('registerTab').classList.add('active');
-            }
+
+    <!-- ═══ Issue Detail Modal ═══ -->
+    <div id="issueModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+<script>
+// ── State ──
+let ws = null;
+let currentUser = null;
+let authToken = null;
+let allIssues = [];
+let currentFilter = 'all';
+let currentIssueDetail = null;
+
+const API_URL = 'http://localhost:8080/api/v1';
+const AUTH_URL = API_URL + '/auth';
+const WS_URL = 'ws://localhost:8080/ws';
+
+// ── Helpers ──
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
+}
+function authHeaders() {
+    return authToken
+        ? { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken }
+        : { 'Content-Type': 'application/json' };
+}
+async function api(method, path, body) {
+    const opts = { method, headers: authHeaders() };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API_URL + path, opts);
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err);
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+}
+
+// ── Tab helpers ──
+function activateTab(barId, idx) {
+    const btns = $(barId).querySelectorAll('.tab-btn');
+    btns.forEach((b, i) => b.classList.toggle('active', i === idx));
+}
+
+function showAuthTab(tab) {
+    const idx = tab === 'login' ? 0 : 1;
+    activateTab('authTabBar', idx);
+    $('loginPanel').classList.toggle('active', tab === 'login');
+    $('registerPanel').classList.toggle('active', tab === 'register');
+}
+
+function showAdminTab(tab) {
+    const map = { users: 0, roles: 1, permissions: 2 };
+    activateTab('adminTabBar', map[tab]);
+    ['usersAdminTab', 'rolesAdminTab', 'permissionsAdminTab'].forEach((id, i) => {
+        $(id).classList.toggle('active', i === map[tab]);
+    });
+}
+
+// ── Auth ──
+async function register() {
+    const username = $('regUsername').value.trim();
+    const email = $('regEmail').value.trim();
+    const password = $('regPassword').value;
+    const confirm = $('regPasswordConfirm').value;
+    if (!username || !email || !password) return alert('Please fill all fields');
+    if (password !== confirm) return alert('Passwords do not match');
+    try {
+        await fetch(AUTH_URL + '/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password })
+        }).then(r => { if (!r.ok) throw new Error('Registration failed'); return r.json(); });
+        alert('Account created. Please login.');
+        showAuthTab('login');
+        $('loginUsername').value = username;
+    } catch (e) { alert(e.message); }
+}
+
+async function login() {
+    const username = $('loginUsername').value.trim();
+    const password = $('loginPassword').value;
+    if (!username || !password) return alert('Please enter credentials');
+    try {
+        const res = await fetch(AUTH_URL + '/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        if (!res.ok) throw new Error('Login failed');
+        const data = await res.json();
+        authToken = data.token;
+        currentUser = data.user;
+        onLogin();
+    } catch (e) { alert(e.message); }
+}
+
+function onLogin() {
+    $('authSection').classList.add('hidden');
+    $('appSection').classList.remove('hidden');
+    $('headerUserInfo').classList.remove('hidden');
+    $('headerLogoutBtn').classList.remove('hidden');
+    $('headerPwBtn').classList.remove('hidden');
+    $('headerUsername').textContent = currentUser.username;
+    $('authStatusPill').className = 'status-pill authenticated';
+    $('authStatusPill').textContent = '✓ Signed in';
+    $('wsStatusPill').classList.remove('hidden');
+
+    if (currentUser.is_admin) {
+        $('headerAdminTag').classList.remove('hidden');
+        $('adminPanel').classList.remove('hidden');
+    }
+
+    connectWebSocket();
+    loadIssues();
+    loadMessages();
+    addEvent('Signed in as ' + currentUser.username);
+}
+
+async function logout() {
+    try {
+        if (authToken) await fetch(AUTH_URL + '/logout', { method: 'POST', headers: authHeaders() });
+    } catch (_) {}
+    if (ws) { ws.close(); ws = null; }
+    authToken = null;
+    currentUser = null;
+    $('authSection').classList.remove('hidden');
+    $('appSection').classList.add('hidden');
+    $('headerUserInfo').classList.add('hidden');
+    $('headerLogoutBtn').classList.add('hidden');
+    $('headerPwBtn').classList.add('hidden');
+    $('headerAdminTag').classList.add('hidden');
+    $('adminPanel').classList.add('hidden');
+    $('wsStatusPill').classList.add('hidden');
+    $('authStatusPill').className = 'status-pill disconnected';
+    $('authStatusPill').textContent = 'Not signed in';
+    $('loginPassword').value = '';
+}
+
+function showPasswordChange() {
+    const cur = prompt('Current password:');
+    if (!cur) return;
+    const nw = prompt('New password:');
+    if (!nw) return;
+    const cf = prompt('Confirm new password:');
+    if (nw !== cf) return alert('Passwords do not match');
+    fetch(AUTH_URL + '/change-password', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ current_password: cur, new_password: nw })
+    }).then(r => {
+        if (!r.ok) throw new Error('Failed');
+        alert('Password changed');
+        addEvent('Password changed');
+    }).catch(e => alert(e.message));
+}
+
+// ── WebSocket ──
+function connectWebSocket() {
+    if (!currentUser) return;
+    ws = new WebSocket(`${WS_URL}?user_id=${currentUser.id}&username=${currentUser.username}`);
+    ws.onopen = () => {
+        $('wsStatusPill').className = 'status-pill connected';
+        $('wsStatusPill').textContent = 'WebSocket: ✓';
+        addEvent('WebSocket connected');
+    };
+    ws.onclose = () => {
+        $('wsStatusPill').className = 'status-pill disconnected';
+        $('wsStatusPill').textContent = 'WebSocket: ✗';
+        addEvent('WebSocket disconnected');
+    };
+    ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data);
+        addEvent(`${msg.type}: ${JSON.stringify(msg.data).substring(0, 60)}…`);
+        if (['new_issue','issue_voted','issue_unvoted','issue_updated','issue_deleted'].includes(msg.type)) {
+            loadIssues();
+            if (currentIssueDetail) openIssueDetail(currentIssueDetail);
         }
-        
-        // Admin Tab Switching
-        function showAdminTab(tab) {
-            document.querySelectorAll('#adminPanel .tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('#adminPanel .tab-content').forEach(c => c.classList.remove('active'));
-            
-            const tabMap = { users: 0, roles: 1, permissions: 2 };
-            const tabElements = document.querySelectorAll('#adminPanel .tab');
-            tabElements[tabMap[tab]].classList.add('active');
-            document.getElementById(tab + 'AdminTab').classList.add('active');
+        if (msg.type === 'new_message') loadMessages();
+        if (['new_opinion','opinion_updated','opinion_deleted'].includes(msg.type)) {
+            if (currentIssueDetail) openIssueDetail(currentIssueDetail);
         }
-        
-        // Registration
-        async function register() {
-            const username = document.getElementById('regUsername').value;
-            const email = document.getElementById('regEmail').value;
-            const password = document.getElementById('regPassword').value;
-            const passwordConfirm = document.getElementById('regPasswordConfirm').value;
-            
-            if (!username || !email || !password) {
-                alert('Please fill in all fields');
-                return;
-            }
-            
-            if (password !== passwordConfirm) {
-                alert('Passwords do not match');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${AUTH_URL}/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, email, password })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Registration failed');
-                }
-                
-                const data = await response.json();
-                alert('Registration successful! Please login.');
-                showAuthTab('login');
-                document.getElementById('loginUsername').value = username;
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
+        if (['new_stance','stance_updated','stance_deleted'].includes(msg.type)) {
+            if (currentIssueDetail) openIssueDetail(currentIssueDetail);
         }
-        
-        // Login
-        async function login() {
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            if (!username || !password) {
-                alert('Please enter username and password');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${AUTH_URL}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Login failed');
-                }
-                
-                const data = await response.json();
-                authToken = data.token;
-                currentUser = data.user;
-                
-                // Update UI
-                document.getElementById('authSection').classList.add('hidden');
-                document.getElementById('appSection').classList.remove('hidden');
-                document.getElementById('wsStatus').classList.remove('hidden');
-                document.getElementById('authStatus').className = 'status authenticated';
-                document.getElementById('authStatus').textContent = '✓ Authenticated as ' + currentUser.username;
-                document.getElementById('currentUsername').textContent = currentUser.username;
-                
-                // Show admin panel if user is admin
-                if (currentUser.is_admin) {
-                    document.getElementById('adminBadge').classList.remove('hidden');
-                    document.getElementById('adminPanel').classList.remove('hidden');
-                }
-                
-                // Connect WebSocket and load data
-                connectWebSocket();
-                loadIssues();
-                loadMessages();
-                
-                addEvent('Logged in successfully');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-        
-        // Logout
-        async function logout() {
-            try {
-                if (authToken) {
-                    await fetch(`${AUTH_URL}/logout`, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + authToken
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Logout error:', error);
-            }
-            
-            // Disconnect WebSocket
-            if (ws) {
-                ws.close();
-                ws = null;
-            }
-            
-            // Reset state
-            authToken = null;
-            currentUser = null;
-            
-            // Update UI
-            document.getElementById('authSection').classList.remove('hidden');
-            document.getElementById('appSection').classList.add('hidden');
-            document.getElementById('wsStatus').classList.add('hidden');
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('adminBadge').classList.add('hidden');
-            document.getElementById('authStatus').className = 'status disconnected';
-            document.getElementById('authStatus').textContent = 'Not logged in';
-            
-            // Clear form fields
-            document.getElementById('loginPassword').value = '';
-            document.getElementById('regPassword').value = '';
-            document.getElementById('regPasswordConfirm').value = '';
-        }
-        
-        // Password Change
-        function showPasswordChange() {
-            const currentPassword = prompt('Enter current password:');
-            if (!currentPassword) return;
-            
-            const newPassword = prompt('Enter new password:');
-            if (!newPassword) return;
-            
-            const confirmPassword = prompt('Confirm new password:');
-            if (newPassword !== confirmPassword) {
-                alert('Passwords do not match');
-                return;
-            }
-            
-            changePassword(currentPassword, newPassword);
-        }
-        
-        async function changePassword(currentPassword, newPassword) {
-            try {
-                const response = await fetch(`${AUTH_URL}/change-password`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + authToken
-                    },
-                    body: JSON.stringify({ 
-                        current_password: currentPassword,
-                        new_password: newPassword 
-                    })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Password change failed');
-                }
-                
-                alert('Password changed successfully!');
-                addEvent('Password changed');
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-        }
-        
-        // WebSocket Connection
-        function connectWebSocket() {
-            if (!currentUser || !authToken) return;
-            
-            ws = new WebSocket(`${WS_URL}?user_id=${currentUser.id}&username=${currentUser.username}`);
-            
-            ws.onopen = () => {
-                document.getElementById('wsStatus').className = 'status connected';
-                document.getElementById('wsStatus').textContent = 'WebSocket: Connected ✓';
-                addEvent('WebSocket connected');
-            };
-            
-            ws.onclose = () => {
-                document.getElementById('wsStatus').className = 'status disconnected';
-                document.getElementById('wsStatus').textContent = 'WebSocket: Disconnected ✗';
-                addEvent('WebSocket disconnected');
-            };
-            
-            ws.onmessage = (event) => {
-                const message = JSON.parse(event.data);
-                handleWebSocketMessage(message);
-            };
-        }
-        
-        function handleWebSocketMessage(message) {
-            addEvent(`${message.type}: ${JSON.stringify(message.data).substring(0, 50)}...`);
-            
-            if (message.type === 'new_issue' || message.type === 'issue_voted' || message.type === 'issue_unvoted' || message.type === 'issue_updated' || message.type === 'issue_deleted') {
-                loadIssues();
-            } else if (message.type === 'new_message') {
-                loadMessages();
-            }
-        }
-        
-        // Send Message
-        async function sendMessage() {
-            const content = document.getElementById('messageContent').value;
-            if (!content) return;
-            
-            try {
-                const response = await fetch(`${API_URL}/messages`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + authToken
-                    },
-                    body: JSON.stringify({
-                        user_id: currentUser.id,
-                        content: content
-                    })
-                });
-                
-                if (!response.ok) throw new Error('Failed to send message');
-                
-                document.getElementById('messageContent').value = '';
-                loadMessages();
-            } catch (error) {
-                alert('Error sending message: ' + error.message);
-            }
-        }
-        
-        // Create Issue
-        async function createIssue() {
-            const summary = document.getElementById('issueSummary').value;
-            const description = document.getElementById('issueDescription').value;
-            
-            if (!summary) {
-                alert('Please enter issue summary');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/issues`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + authToken
-                    },
-                    body: JSON.stringify({
-                        user_id: currentUser.id,
-                        summary: summary,
-                        description: description
-                    })
-                });
-                
-                if (!response.ok) throw new Error('Failed to create issue');
-                
-                document.getElementById('issueSummary').value = '';
-                document.getElementById('issueDescription').value = '';
-                loadIssues();
-            } catch (error) {
-                alert('Error creating issue: ' + error.message);
-            }
-        }
-        
-        // Vote Issue
-        async function voteIssue(issueId) {
-            try {
-                const response = await fetch(`${API_URL}/issues/${issueId}/vote`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + authToken
-                    },
-                    body: JSON.stringify({ user_id: currentUser.id })
-                });
-                
-                if (!response.ok) throw new Error('Already voted or error');
-                loadIssues();
-                addEvent('Voted on issue #' + issueId);
-            } catch (error) {
-                alert('Error voting: ' + error.message);
-            }
-        }
-        
-        // Unvote Issue
-        async function unvoteIssue(issueId) {
-            try {
-                const response = await fetch(`${API_URL}/issues/${issueId}/vote`, {
-                    method: 'DELETE',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + authToken
-                    },
-                    body: JSON.stringify({ user_id: currentUser.id })
-                });
-                
-                if (!response.ok) throw new Error('Not voted or error');
-                loadIssues();
-                addEvent('Removed vote from issue #' + issueId);
-            } catch (error) {
-                alert('Error unvoting: ' + error.message);
-            }
-        }
-        
-        // Edit Issue
-        async function editIssue(issueId) {
-            const summary = prompt('Enter new summary:');
-            if (!summary) return;
-            
-            const description = prompt('Enter new description:');
-            
-            try {
-                const response = await fetch(`${API_URL}/issues/${issueId}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + authToken
-                    },
-                    body: JSON.stringify({ summary, description })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to update issue');
-                }
-                
-                loadIssues();
-                addEvent('Updated issue #' + issueId);
-            } catch (error) {
-                alert('Error updating issue: ' + error.message);
-            }
-        }
-        
-        // Delete Issue
-        async function deleteIssue(issueId) {
-            if (!confirm('Are you sure you want to delete this issue?')) return;
-            
-            try {
-                const response = await fetch(`${API_URL}/issues/${issueId}`, {
-                    method: 'DELETE',
-                    headers: { 
-                        'Authorization': 'Bearer ' + authToken
-                    }
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to delete issue');
-                }
-                
-                loadIssues();
-                addEvent('Deleted issue #' + issueId);
-            } catch (error) {
-                alert('Error deleting issue: ' + error.message);
-            }
-        }
-        
-        // Load Issues
-        async function loadIssues() {
-            try {
-                const response = await fetch(`${API_URL}/issues`, {
-                    headers: authToken ? { 'Authorization': 'Bearer ' + authToken } : {}
-                });
-                const issues = await response.json();
-                
-                const issueList = document.getElementById('issueList');
-                if (issues && issues.length > 0) {
-                    issueList.innerHTML = issues.map(issue => {
-                        const isOwner = currentUser && issue.user_id === currentUser.id;
-                        const isAdmin = currentUser && currentUser.is_admin;
-                        const canEdit = isOwner || isAdmin;
-                        
-                        return `
-                        <div class="issue-item">
-                            <div class="issue-summary">
-                                ${issue.summary}
-                                <span class="vote-count">👍 ${issue.vote_count}</span>
-                            </div>
-                            <div class="issue-meta">
-                                by ${issue.username} • ${new Date(issue.created_at).toLocaleString()}
-                            </div>
-                            <p style="margin: 8px 0; font-size: 13px;">${issue.description || ''}</p>
-                            <button class="vote-btn" onclick="voteIssue(${issue.id})">Vote</button>
-                            <button class="vote-btn secondary" onclick="unvoteIssue(${issue.id})">Unvote</button>
-                            ${canEdit ? `<button class="action-btn secondary" onclick="editIssue(${issue.id})">Edit</button>` : ''}
-                            ${canEdit ? `<button class="action-btn danger" onclick="deleteIssue(${issue.id})">Delete</button>` : ''}
-                        </div>
-                    `}).join('');
-                } else {
-                    issueList.innerHTML = '<p style="text-align: center; color: #999;">No issues yet</p>';
-                }
-            } catch (error) {
-                console.error('Error loading issues:', error);
-            }
-        }
-        
-        // Load Messages
-        async function loadMessages() {
-            try {
-                const response = await fetch(`${API_URL}/messages?limit=10`, {
-                    headers: authToken ? { 'Authorization': 'Bearer ' + authToken } : {}
-                });
-                const messages = await response.json();
-                
-                const messageList = document.getElementById('messageList');
-                if (messages && messages.length > 0) {
-                    messageList.innerHTML = messages.reverse().map(msg => `
-                        <div class="message-item">
-                            <strong>${msg.username}:</strong> ${msg.content}
-                            <div style="font-size: 11px; color: #999; margin-top: 4px;">
-                                ${new Date(msg.created_at).toLocaleString()}
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    messageList.innerHTML = '<p style="text-align: center; color: #999;">No messages yet</p>';
-                }
-            } catch (error) {
-                console.error('Error loading messages:', error);
-            }
-        }
-        
-        // Admin Functions
-        async function loadUsers() {
-            try {
-                const response = await fetch(`${API_URL}/users`, {
-                    headers: { 'Authorization': 'Bearer ' + authToken }
-                });
-                
-                if (!response.ok) throw new Error('Failed to load users');
-                
-                const users = await response.json();
-                const userList = document.getElementById('userList');
-                
-                if (users && users.length > 0) {
-                    userList.innerHTML = users.map(user => `
-                        <div style="padding: 8px; border-bottom: 1px solid #eee;">
-                            <strong>${user.username}</strong> (${user.email})
-                            ${user.is_admin ? '<span style="background: #ffc107; padding: 2px 6px; border-radius: 3px; font-size: 11px;">ADMIN</span>' : ''}
-                            ${!user.is_active ? '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">INACTIVE</span>' : ''}
-                            <div style="font-size: 11px; color: #666; margin-top: 3px;">
-                                ID: ${user.id} • Created: ${new Date(user.created_at).toLocaleDateString()}
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    userList.innerHTML = '<p style="text-align: center; color: #999;">No users found</p>';
-                }
-            } catch (error) {
-                alert('Error loading users: ' + error.message);
-            }
-        }
-        
-        async function createRole() {
-            const name = document.getElementById('newRoleName').value;
-            const description = document.getElementById('newRoleDesc').value;
-            
-            if (!name) {
-                alert('Please enter role name');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/admin/roles`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + authToken
-                    },
-                    body: JSON.stringify({ name, description })
-                });
-                
-                if (!response.ok) throw new Error('Failed to create role');
-                
-                document.getElementById('newRoleName').value = '';
-                document.getElementById('newRoleDesc').value = '';
-                loadRoles();
-                addEvent('Created role: ' + name);
-            } catch (error) {
-                alert('Error creating role: ' + error.message);
-            }
-        }
-        
-        async function loadRoles() {
-            try {
-                const response = await fetch(`${API_URL}/admin/roles`, {
-                    headers: { 'Authorization': 'Bearer ' + authToken }
-                });
-                
-                if (!response.ok) throw new Error('Failed to load roles');
-                
-                const roles = await response.json();
-                const roleList = document.getElementById('roleList');
-                
-                if (roles && roles.length > 0) {
-                    roleList.innerHTML = roles.map(role => `
-                        <div style="padding: 8px; border-bottom: 1px solid #eee;">
-                            <strong>${role.name}</strong>
-                            <div style="font-size: 12px; color: #666; margin-top: 3px;">
-                                ${role.description || 'No description'}
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    roleList.innerHTML = '<p style="text-align: center; color: #999;">No roles found</p>';
-                }
-            } catch (error) {
-                alert('Error loading roles: ' + error.message);
-            }
-        }
-        
-        async function createPermission() {
-            const name = document.getElementById('newPermName').value;
-            const resource = document.getElementById('newPermResource').value;
-            const action = document.getElementById('newPermAction').value;
-            const description = document.getElementById('newPermDesc').value;
-            
-            if (!name || !resource || !action) {
-                alert('Please enter permission name, resource, and action');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_URL}/admin/permissions`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + authToken
-                    },
-                    body: JSON.stringify({ name, description, resource, action })
-                });
-                
-                if (!response.ok) throw new Error('Failed to create permission');
-                
-                document.getElementById('newPermName').value = '';
-                document.getElementById('newPermResource').value = '';
-                document.getElementById('newPermAction').value = '';
-                document.getElementById('newPermDesc').value = '';
-                loadPermissions();
-                addEvent('Created permission: ' + name);
-            } catch (error) {
-                alert('Error creating permission: ' + error.message);
-            }
-        }
-        
-        async function loadPermissions() {
-            try {
-                const response = await fetch(`${API_URL}/admin/permissions`, {
-                    headers: { 'Authorization': 'Bearer ' + authToken }
-                });
-                
-                if (!response.ok) throw new Error('Failed to load permissions');
-                
-                const permissions = await response.json();
-                const permList = document.getElementById('permissionList');
-                
-                if (permissions && permissions.length > 0) {
-                    permList.innerHTML = permissions.map(perm => `
-                        <div style="padding: 8px; border-bottom: 1px solid #eee;">
-                            <strong>${perm.name}</strong>
-                            <div style="font-size: 12px; color: #666; margin-top: 3px;">
-                                ${perm.description || 'No description'}
-                            </div>
-                        </div>
-                    `).join('');
-                } else {
-                    permList.innerHTML = '<p style="text-align: center; color: #999;">No permissions found</p>';
-                }
-            } catch (error) {
-                alert('Error loading permissions: ' + error.message);
-            }
-        }
-        
-        function addEvent(text) {
-            const eventList = document.getElementById('eventList');
-            const eventItem = document.createElement('div');
-            eventItem.className = 'event-item';
-            eventItem.innerHTML = `
-                <div>${text}</div>
-                <div style="font-size: 11px; color: #999; margin-top: 3px;">
-                    ${new Date().toLocaleTimeString()}
+    };
+}
+
+// ── Events ──
+function addEvent(text) {
+    const el = $('eventList');
+    if (el.querySelector('.empty-text')) el.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = 'event-item';
+    div.innerHTML = `<div>${escapeHtml(text)}</div><div style="font-size:11px;color:var(--clr-text-muted);margin-top:2px;">${new Date().toLocaleTimeString()}</div>`;
+    el.insertBefore(div, el.firstChild);
+    while (el.children.length > 15) el.removeChild(el.lastChild);
+}
+
+// ── Messages ──
+async function sendMessage() {
+    const content = $('messageContent').value.trim();
+    if (!content) return;
+    try {
+        await api('POST', '/messages', { user_id: currentUser.id, content });
+        $('messageContent').value = '';
+        loadMessages();
+    } catch (e) { alert(e.message); }
+}
+
+async function loadMessages() {
+    try {
+        const msgs = await api('GET', '/messages?limit=20');
+        const el = $('messageList');
+        if (msgs && msgs.length) {
+            el.innerHTML = msgs.reverse().map(m => `
+                <div class="msg-item">
+                    <strong>${escapeHtml(m.username)}:</strong> ${escapeHtml(m.content)}
+                    <div style="font-size:11px;color:var(--clr-text-muted);margin-top:3px;">${new Date(m.created_at).toLocaleString()}</div>
                 </div>
-            `;
-            
-            if (eventList.querySelector('p')) {
-                eventList.innerHTML = '';
-            }
-            
-            eventList.insertBefore(eventItem, eventList.firstChild);
-            
-            // Keep only last 10 events
-            while (eventList.children.length > 10) {
-                eventList.removeChild(eventList.lastChild);
-            }
+            `).join('');
+        } else {
+            el.innerHTML = '<p class="empty-text">No messages yet</p>';
         }
-    </script>
+    } catch (_) {}
+}
+
+// ── Issues ──
+async function createIssue() {
+    const summary = $('issueSummary').value.trim();
+    const description = $('issueDescription').value.trim();
+    const type = $('issueType').value;
+    if (!summary) return alert('Please enter a summary');
+    try {
+        await api('POST', '/issues', { user_id: currentUser.id, type, summary, description });
+        $('issueSummary').value = '';
+        $('issueDescription').value = '';
+        loadIssues();
+    } catch (e) { alert(e.message); }
+}
+
+function filterIssues(type) {
+    currentFilter = type;
+    const btns = $('issueTabBar').querySelectorAll('.tab-btn');
+    btns.forEach((b, i) => b.classList.toggle('active', (type === 'all' && i === 0) || (type === 'issue' && i === 1) || (type === 'proposition' && i === 2)));
+    renderIssues();
+}
+
+async function loadIssues() {
+    try {
+        allIssues = await api('GET', '/issues') || [];
+        renderIssues();
+    } catch (_) {}
+}
+
+function renderIssues() {
+    const filtered = currentFilter === 'all' ? allIssues : allIssues.filter(i => i.type === currentFilter);
+    const el = $('issueList');
+    if (!filtered.length) {
+        el.innerHTML = '<p class="empty-text">No items yet</p>';
+        return;
+    }
+    el.innerHTML = filtered.map(issue => {
+        const isOwner = currentUser && issue.user_id === currentUser.id;
+        const isAdmin = currentUser && currentUser.is_admin;
+        const canEdit = isOwner || isAdmin;
+        const typeBadge = issue.type === 'proposition'
+            ? '<span class="item-type-badge badge-proposition">Proposition</span>'
+            : '<span class="item-type-badge badge-issue">Issue</span>';
+
+        let truthBadge = '';
+        if (issue.type === 'proposition') {
+            if (issue.truth_value === true) truthBadge = '<span class="truth-badge truth-true">True</span>';
+            else if (issue.truth_value === false) truthBadge = '<span class="truth-badge truth-false">False</span>';
+            else truthBadge = '<span class="truth-badge truth-undetermined">Undetermined</span>';
+        }
+
+        let conclusionHtml = '';
+        if (issue.conclusion) {
+            conclusionHtml = `<div class="conclusion-text">${escapeHtml(issue.conclusion)}</div>`;
+        }
+
+        return `
+        <div class="item" style="cursor:pointer;" onclick="openIssueDetail(${issue.id})">
+            <div class="item-title">
+                ${typeBadge}
+                ${escapeHtml(issue.summary)}
+                <span class="vote-badge">▲ ${issue.vote_count}</span>
+                ${truthBadge}
+            </div>
+            <div class="item-meta">by ${escapeHtml(issue.username || '?')} · ${new Date(issue.created_at).toLocaleString()}</div>
+            ${issue.description ? `<div class="item-desc">${escapeHtml(issue.description)}</div>` : ''}
+            ${conclusionHtml}
+            <div class="btn-group" onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-primary" onclick="voteIssue(${issue.id})">▲ Vote</button>
+                <button class="btn btn-sm btn-secondary" onclick="unvoteIssue(${issue.id})">Unvote</button>
+                ${canEdit ? `<button class="btn btn-sm btn-secondary" onclick="editIssue(${issue.id})">Edit</button>` : ''}
+                ${canEdit ? `<button class="btn btn-sm btn-danger" onclick="deleteIssue(${issue.id})">Delete</button>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function voteIssue(id) {
+    try { await api('POST', `/issues/${id}/vote`, { user_id: currentUser.id }); loadIssues(); addEvent('Voted on #' + id); }
+    catch (e) { alert(e.message); }
+}
+async function unvoteIssue(id) {
+    try { await api('POST', `/issues/${id}/unvote`, { user_id: currentUser.id }); loadIssues(); addEvent('Unvoted #' + id); }
+    catch (e) { alert(e.message); }
+}
+
+async function editIssue(id) {
+    const issue = allIssues.find(i => i.id === id);
+    const summary = prompt('Summary:', issue?.summary || '');
+    if (summary === null) return;
+    const description = prompt('Description:', issue?.description || '');
+    const body = {};
+    if (summary) body.summary = summary;
+    if (description) body.description = description;
+    if (issue?.type === 'issue') {
+        const conclusion = prompt('Conclusion (leave blank to skip):', issue?.conclusion || '');
+        if (conclusion) body.conclusion = conclusion;
+    }
+    if (issue?.type === 'proposition') {
+        const tv = prompt('Truth value (true/false/blank to skip):');
+        if (tv === 'true') body.truth_value = true;
+        else if (tv === 'false') body.truth_value = false;
+    }
+    try { await api('PUT', `/issues/${id}`, body); loadIssues(); addEvent('Updated #' + id); }
+    catch (e) { alert(e.message); }
+}
+
+async function deleteIssue(id) {
+    if (!confirm('Delete this item?')) return;
+    try { await api('DELETE', `/issues/${id}`); loadIssues(); addEvent('Deleted #' + id); }
+    catch (e) { alert(e.message); }
+}
+
+// ── Issue Detail Modal ──
+async function openIssueDetail(issueId) {
+    currentIssueDetail = issueId;
+    try {
+        const issue = await api('GET', `/issues/${issueId}`);
+        const opinions = await api('GET', `/issues/${issueId}/opinions`) || [];
+        const refs = await api('GET', `/issues/${issueId}/references`) || [];
+
+        const typeBadge = issue.type === 'proposition'
+            ? '<span class="item-type-badge badge-proposition">Proposition</span>'
+            : '<span class="item-type-badge badge-issue">Issue</span>';
+
+        let truthHtml = '';
+        if (issue.type === 'proposition') {
+            if (issue.truth_value === true) truthHtml = '<span class="truth-badge truth-true">True</span>';
+            else if (issue.truth_value === false) truthHtml = '<span class="truth-badge truth-false">False</span>';
+            else truthHtml = '<span class="truth-badge truth-undetermined">Undetermined</span>';
+        }
+
+        let conclusionHtml = '';
+        if (issue.conclusion) {
+            conclusionHtml = `<div class="conclusion-text">${escapeHtml(issue.conclusion)}</div>`;
+        }
+
+        // Build opinions HTML with stances
+        let opinionsHtml = '';
+        for (const op of opinions) {
+            const stances = await loadStancesForOpinion(op.id);
+            const supportedBy = await api('GET', `/opinions/${op.id}/supported-by`) || [];
+            const supports = await api('GET', `/opinions/${op.id}/supports`) || [];
+
+            let supportLinksHtml = '';
+            if (supportedBy.length) {
+                supportLinksHtml += `<div style="font-size:12px;color:var(--clr-opinion);margin-top:4px;">↑ Supported by: ${supportedBy.map(s => '#' + s.id).join(', ')}</div>`;
+            }
+            if (supports.length) {
+                supportLinksHtml += `<div style="font-size:12px;color:var(--clr-opinion);margin-top:2px;">↓ Supports: ${supports.map(s => '#' + s.id).join(', ')}</div>`;
+            }
+
+            const stancesHtml = stances.map(s => `
+                <div class="stance-item stance-${s.stance_type}">
+                    <span class="stance-type-label">${s.stance_type}</span>
+                    <div>
+                        <strong>${escapeHtml(s.username || '?')}</strong>
+                        ${s.reason ? ': ' + escapeHtml(s.reason) : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            const canEditOp = currentUser && (op.user_id === currentUser.id || currentUser.is_admin);
+            opinionsHtml += `
+            <div class="opinion-item">
+                <div class="opinion-content"><strong>#${op.id}</strong> — ${escapeHtml(op.content)}</div>
+                <div class="opinion-meta">by ${escapeHtml(op.username || '?')} · ${new Date(op.created_at).toLocaleString()}</div>
+                ${supportLinksHtml}
+                ${stancesHtml}
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-support" onclick="createStanceOnOpinion(${op.id},'support')">Support</button>
+                    <button class="btn btn-sm btn-oppose" onclick="createStanceOnOpinion(${op.id},'oppose')">Oppose</button>
+                    <button class="btn btn-sm btn-doubt" onclick="createStanceOnOpinion(${op.id},'doubt')">Doubt</button>
+                    <button class="btn btn-sm btn-secondary" onclick="addSupportLink(${op.id})">Link Support</button>
+                    ${canEditOp ? `<button class="btn btn-sm btn-secondary" onclick="editOpinion(${op.id})">Edit</button>` : ''}
+                    ${canEditOp ? `<button class="btn btn-sm btn-danger" onclick="deleteOpinion(${op.id},${issueId})">Del</button>` : ''}
+                </div>
+            </div>`;
+        }
+
+        // Build references HTML with stances
+        let refsHtml = '';
+        for (const ref of refs) {
+            const stances = await loadStancesForReference(ref.id);
+            const stancesHtml = stances.map(s => `
+                <div class="stance-item stance-${s.stance_type}">
+                    <span class="stance-type-label">${s.stance_type}</span>
+                    <div>
+                        <strong>${escapeHtml(s.username || '?')}</strong>
+                        ${s.reason ? ': ' + escapeHtml(s.reason) : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            refsHtml += `
+            <div class="ref-item">
+                <div class="ref-title">${escapeHtml(ref.title || 'Untitled')}</div>
+                <div class="ref-url"><a href="${escapeHtml(ref.url)}" target="_blank" rel="noopener">${escapeHtml(ref.url)}</a></div>
+                ${ref.description ? `<div style="font-size:13px;margin-top:4px;">${escapeHtml(ref.description)}</div>` : ''}
+                ${ref.opinion_id ? `<div style="font-size:12px;color:var(--clr-opinion);margin-top:2px;">Linked to opinion #${ref.opinion_id}</div>` : ''}
+                ${stancesHtml}
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-support" onclick="createStanceOnRef(${ref.id},'support')">Support</button>
+                    <button class="btn btn-sm btn-oppose" onclick="createStanceOnRef(${ref.id},'oppose')">Oppose</button>
+                    <button class="btn btn-sm btn-doubt" onclick="createStanceOnRef(${ref.id},'doubt')">Doubt</button>
+                </div>
+            </div>`;
+        }
+
+        $('modalContent').innerHTML = `
+            <div class="item-title" style="font-size:20px;margin-bottom:8px;">
+                ${typeBadge}
+                ${escapeHtml(issue.summary)}
+                <span class="vote-badge">▲ ${issue.vote_count}</span>
+                ${truthHtml}
+            </div>
+            <div class="item-meta" style="margin-bottom:12px;">by ${escapeHtml(issue.username || '?')} · ${new Date(issue.created_at).toLocaleString()}</div>
+            ${issue.description ? `<div class="item-desc">${escapeHtml(issue.description)}</div>` : ''}
+            ${conclusionHtml}
+            <hr class="divider">
+
+            <div class="section-label">Opinions (${opinions.length})</div>
+            <div style="margin-bottom:12px;">
+                <textarea id="newOpinionContent" placeholder="Share your opinion…" rows="2"></textarea>
+                <button class="btn btn-primary btn-sm" onclick="createOpinion(${issueId})">Add Opinion</button>
+            </div>
+            ${opinionsHtml || '<p class="empty-text">No opinions yet</p>'}
+
+            <hr class="divider">
+
+            <div class="section-label">Facts / References (${refs.length})</div>
+            <div style="margin-bottom:12px;">
+                <input type="text" id="newRefTitle" placeholder="Title">
+                <input type="text" id="newRefUrl" placeholder="URL">
+                <input type="text" id="newRefDesc" placeholder="Description (optional)">
+                <input type="number" id="newRefOpinionId" placeholder="Link to opinion ID (optional)">
+                <button class="btn btn-primary btn-sm" onclick="createReference(${issueId})">Add Reference</button>
+            </div>
+            ${refsHtml || '<p class="empty-text">No references yet</p>'}
+        `;
+
+        $('issueModal').classList.add('open');
+    } catch (e) {
+        alert('Error loading detail: ' + e.message);
+    }
+}
+
+function closeModal() {
+    $('issueModal').classList.remove('open');
+    currentIssueDetail = null;
+}
+
+// ── Opinions ──
+async function createOpinion(issueId) {
+    const content = $('newOpinionContent').value.trim();
+    if (!content) return alert('Please write an opinion');
+    try {
+        await api('POST', '/opinions', { user_id: currentUser.id, issue_id: issueId, content });
+        openIssueDetail(issueId);
+        addEvent('Added opinion');
+    } catch (e) { alert(e.message); }
+}
+
+async function editOpinion(opinionId) {
+    const content = prompt('Edit opinion:');
+    if (!content) return;
+    try {
+        await api('PUT', `/opinions/${opinionId}`, { content });
+        if (currentIssueDetail) openIssueDetail(currentIssueDetail);
+        addEvent('Updated opinion #' + opinionId);
+    } catch (e) { alert(e.message); }
+}
+
+async function deleteOpinion(opinionId, issueId) {
+    if (!confirm('Delete this opinion?')) return;
+    try {
+        await api('DELETE', `/opinions/${opinionId}`);
+        openIssueDetail(issueId);
+        addEvent('Deleted opinion #' + opinionId);
+    } catch (e) { alert(e.message); }
+}
+
+async function addSupportLink(opinionId) {
+    const target = prompt('Enter the opinion ID that this opinion (#' + opinionId + ') supports:');
+    if (!target) return;
+    try {
+        await api('POST', '/opinions/support', { supporter_id: opinionId, supported_id: parseInt(target) });
+        if (currentIssueDetail) openIssueDetail(currentIssueDetail);
+        addEvent(`Opinion #${opinionId} now supports #${target}`);
+    } catch (e) { alert(e.message); }
+}
+
+// ── References ──
+async function createReference(issueId) {
+    const title = $('newRefTitle').value.trim();
+    const url = $('newRefUrl').value.trim();
+    const description = $('newRefDesc').value.trim();
+    const opIdVal = $('newRefOpinionId').value.trim();
+    if (!url) return alert('Please enter a URL');
+    const body = { user_id: currentUser.id, issue_id: issueId, url, title, description };
+    if (opIdVal) body.opinion_id = parseInt(opIdVal);
+    try {
+        await api('POST', '/references', body);
+        openIssueDetail(issueId);
+        addEvent('Added reference');
+    } catch (e) { alert(e.message); }
+}
+
+// ── Stances ──
+async function loadStancesForOpinion(opinionId) {
+    try { return await api('GET', `/opinions/${opinionId}/stances`) || []; }
+    catch (_) { return []; }
+}
+async function loadStancesForReference(refId) {
+    try { return await api('GET', `/references/${refId}/stances`) || []; }
+    catch (_) { return []; }
+}
+
+async function createStanceOnOpinion(opinionId, type) {
+    const reason = prompt(`Reason for "${type}" (optional):`);
+    try {
+        await api('POST', '/stances', { user_id: currentUser.id, stance_type: type, reason: reason || '', opinion_id: opinionId });
+        if (currentIssueDetail) openIssueDetail(currentIssueDetail);
+        addEvent(`Stance: ${type} on opinion #${opinionId}`);
+    } catch (e) { alert(e.message); }
+}
+
+async function createStanceOnRef(refId, type) {
+    const reason = prompt(`Reason for "${type}" (optional):`);
+    try {
+        await api('POST', '/stances', { user_id: currentUser.id, stance_type: type, reason: reason || '', reference_id: refId });
+        if (currentIssueDetail) openIssueDetail(currentIssueDetail);
+        addEvent(`Stance: ${type} on reference #${refId}`);
+    } catch (e) { alert(e.message); }
+}
+
+// ── Admin ──
+async function loadUsers() {
+    try {
+        const users = await api('GET', '/users');
+        $('userList').innerHTML = (users && users.length) ? users.map(u => `
+            <div style="padding:8px;border-bottom:1px solid var(--clr-border);">
+                <strong>${escapeHtml(u.username)}</strong> (${escapeHtml(u.email)})
+                ${u.is_admin ? '<span class="admin-tag">ADMIN</span>' : ''}
+                ${!u.is_active ? '<span style="background:var(--clr-danger);color:#fff;padding:1px 6px;border-radius:3px;font-size:11px;margin-left:4px;">INACTIVE</span>' : ''}
+                <div style="font-size:11px;color:var(--clr-text-muted);margin-top:2px;">ID: ${u.id} · ${new Date(u.created_at).toLocaleDateString()}</div>
+            </div>
+        `).join('') : '<p class="empty-text">No users</p>';
+    } catch (e) { alert(e.message); }
+}
+
+async function createRole() {
+    const name = $('newRoleName').value.trim();
+    const description = $('newRoleDesc').value.trim();
+    if (!name) return alert('Enter role name');
+    try {
+        await api('POST', '/admin/roles', { name, description });
+        $('newRoleName').value = '';
+        $('newRoleDesc').value = '';
+        loadRoles();
+        addEvent('Created role: ' + name);
+    } catch (e) { alert(e.message); }
+}
+
+async function loadRoles() {
+    try {
+        const roles = await api('GET', '/admin/roles');
+        $('roleList').innerHTML = (roles && roles.length) ? roles.map(r => `
+            <div style="padding:8px;border-bottom:1px solid var(--clr-border);">
+                <strong>${escapeHtml(r.name)}</strong>
+                <div style="font-size:12px;color:var(--clr-text-muted);">${escapeHtml(r.description || 'No description')}</div>
+            </div>
+        `).join('') : '<p class="empty-text">No roles</p>';
+    } catch (e) { alert(e.message); }
+}
+
+async function createPermission() {
+    const name = $('newPermName').value.trim();
+    const resource = $('newPermResource').value.trim();
+    const action = $('newPermAction').value.trim();
+    const description = $('newPermDesc').value.trim();
+    if (!name || !resource || !action) return alert('Fill name, resource, and action');
+    try {
+        await api('POST', '/admin/permissions', { name, description, resource, action });
+        ['newPermName','newPermResource','newPermAction','newPermDesc'].forEach(id => $(id).value = '');
+        loadPermissions();
+        addEvent('Created permission: ' + name);
+    } catch (e) { alert(e.message); }
+}
+
+async function loadPermissions() {
+    try {
+        const perms = await api('GET', '/admin/permissions');
+        $('permissionList').innerHTML = (perms && perms.length) ? perms.map(p => `
+            <div style="padding:8px;border-bottom:1px solid var(--clr-border);">
+                <strong>${escapeHtml(p.name)}</strong>
+                <div style="font-size:12px;color:var(--clr-text-muted);">${escapeHtml(p.description || 'No description')}</div>
+            </div>
+        `).join('') : '<p class="empty-text">No permissions</p>';
+    } catch (e) { alert(e.message); }
+}
+</script>
 </body>
 </html>
