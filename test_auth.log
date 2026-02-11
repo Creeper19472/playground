@@ -1,0 +1,155 @@
+2026/02/10 15:46:57 Loaded configuration: Server=0.0.0.0:8080, Database=sqlite
+2026/02/10 15:46:57 Connecting to SQLite database: ./playground.db
+2026/02/10 15:46:57 Database connected successfully
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.046ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="users"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.347ms] [34;1m[rows:0][0m CREATE TABLE `users` (`id` integer PRIMARY KEY AUTOINCREMENT,`username` text NOT NULL,`email` text NOT NULL,`password_hash` text NOT NULL,`is_admin` numeric DEFAULT false,`is_active` numeric DEFAULT true,`created_at` datetime,`updated_at` datetime,`deleted_at` datetime)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.897ms] [34;1m[rows:0][0m CREATE INDEX `idx_users_deleted_at` ON `users`(`deleted_at`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.119ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX `idx_users_email` ON `users`(`email`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.867ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX `idx_users_username` ON `users`(`username`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="roles"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.005ms] [34;1m[rows:0][0m CREATE TABLE `roles` (`id` integer PRIMARY KEY AUTOINCREMENT,`name` text NOT NULL,`description` text,`created_at` datetime,`updated_at` datetime,`deleted_at` datetime)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.410ms] [34;1m[rows:0][0m CREATE INDEX `idx_roles_deleted_at` ON `roles`(`deleted_at`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.863ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX `idx_roles_name` ON `roles`(`name`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.006ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="user_roles"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.819ms] [34;1m[rows:0][0m CREATE TABLE `user_roles` (`role_id` integer,`user_id` integer,PRIMARY KEY (`role_id`,`user_id`),CONSTRAINT `fk_user_roles_role` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`),CONSTRAINT `fk_user_roles_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`))
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="permissions"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.839ms] [34;1m[rows:0][0m CREATE TABLE `permissions` (`id` integer PRIMARY KEY AUTOINCREMENT,`name` text NOT NULL,`description` text,`resource` text NOT NULL,`action` text NOT NULL,`created_at` datetime,`updated_at` datetime,`deleted_at` datetime)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.905ms] [34;1m[rows:0][0m CREATE INDEX `idx_permissions_deleted_at` ON `permissions`(`deleted_at`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.959ms] [34;1m[rows:0][0m CREATE INDEX `idx_permissions_action` ON `permissions`(`action`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.065ms] [34;1m[rows:0][0m CREATE INDEX `idx_permissions_resource` ON `permissions`(`resource`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.783ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX `idx_permissions_name` ON `permissions`(`name`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="user_permissions"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.005ms] [34;1m[rows:0][0m CREATE TABLE `user_permissions` (`permission_id` integer,`user_id` integer,PRIMARY KEY (`permission_id`,`user_id`),CONSTRAINT `fk_user_permissions_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`),CONSTRAINT `fk_user_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions`(`id`))
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="user_groups"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.853ms] [34;1m[rows:0][0m CREATE TABLE `user_groups` (`id` integer PRIMARY KEY AUTOINCREMENT,`name` text NOT NULL,`description` text,`created_at` datetime,`updated_at` datetime,`deleted_at` datetime)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.758ms] [34;1m[rows:0][0m CREATE INDEX `idx_user_groups_deleted_at` ON `user_groups`(`deleted_at`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.034ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX `idx_user_groups_name` ON `user_groups`(`name`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="user_group_members"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.929ms] [34;1m[rows:0][0m CREATE TABLE `user_group_members` (`user_group_id` integer,`user_id` integer,PRIMARY KEY (`user_group_id`,`user_id`),CONSTRAINT `fk_user_group_members_user_group` FOREIGN KEY (`user_group_id`) REFERENCES `user_groups`(`id`),CONSTRAINT `fk_user_group_members_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`))
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.021ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="role_permissions"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.896ms] [34;1m[rows:0][0m CREATE TABLE `role_permissions` (`permission_id` integer,`role_id` integer,PRIMARY KEY (`permission_id`,`role_id`),CONSTRAINT `fk_role_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions`(`id`),CONSTRAINT `fk_role_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`))
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="group_permissions"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.946ms] [34;1m[rows:0][0m CREATE TABLE `group_permissions` (`user_group_id` integer,`permission_id` integer,PRIMARY KEY (`user_group_id`,`permission_id`),CONSTRAINT `fk_group_permissions_user_group` FOREIGN KEY (`user_group_id`) REFERENCES `user_groups`(`id`),CONSTRAINT `fk_group_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions`(`id`))
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="issues"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.144ms] [34;1m[rows:0][0m CREATE TABLE `issues` (`id` integer PRIMARY KEY AUTOINCREMENT,`user_id` integer NOT NULL,`summary` text NOT NULL,`description` text,`vote_count` integer DEFAULT 0,`created_at` datetime,`updated_at` datetime,`deleted_at` datetime,CONSTRAINT `fk_users_issues` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`))
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.929ms] [34;1m[rows:0][0m CREATE INDEX `idx_issues_deleted_at` ON `issues`(`deleted_at`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.096ms] [34;1m[rows:0][0m CREATE INDEX `idx_vote_count` ON `issues`(`vote_count` desc)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.336ms] [34;1m[rows:0][0m CREATE INDEX `idx_issues_user_id` ON `issues`(`user_id`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="votes"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.017ms] [34;1m[rows:0][0m CREATE TABLE `votes` (`id` integer PRIMARY KEY AUTOINCREMENT,`user_id` integer NOT NULL,`issue_id` integer NOT NULL,`created_at` datetime,`deleted_at` datetime,CONSTRAINT `fk_issues_votes` FOREIGN KEY (`issue_id`) REFERENCES `issues`(`id`),CONSTRAINT `fk_users_votes` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`))
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.874ms] [34;1m[rows:0][0m CREATE INDEX `idx_votes_deleted_at` ON `votes`(`deleted_at`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.897ms] [34;1m[rows:0][0m CREATE INDEX `idx_votes_issue_id` ON `votes`(`issue_id`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.897ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX `idx_user_issue` ON `votes`(`user_id`,`issue_id`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.005ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="messages"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.010ms] [34;1m[rows:0][0m CREATE TABLE `messages` (`id` integer PRIMARY KEY AUTOINCREMENT,`user_id` integer NOT NULL,`content` text NOT NULL,`issue_id` integer,`created_at` datetime,`deleted_at` datetime,CONSTRAINT `fk_issues_messages` FOREIGN KEY (`issue_id`) REFERENCES `issues`(`id`),CONSTRAINT `fk_users_messages` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`))
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.979ms] [34;1m[rows:0][0m CREATE INDEX `idx_messages_deleted_at` ON `messages`(`deleted_at`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.853ms] [34;1m[rows:0][0m CREATE INDEX `idx_messages_issue_id` ON `messages`(`issue_id`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.869ms] [34;1m[rows:0][0m CREATE INDEX `idx_messages_user_id` ON `messages`(`user_id`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.007ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="references"
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.114ms] [34;1m[rows:0][0m CREATE TABLE `references` (`id` integer PRIMARY KEY AUTOINCREMENT,`user_id` integer NOT NULL,`issue_id` integer NOT NULL,`url` text NOT NULL,`title` text,`description` text,`created_at` datetime,`deleted_at` datetime,CONSTRAINT `fk_issues_references` FOREIGN KEY (`issue_id`) REFERENCES `issues`(`id`),CONSTRAINT `fk_users_references` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`))
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.860ms] [34;1m[rows:0][0m CREATE INDEX `idx_references_deleted_at` ON `references`(`deleted_at`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[1.077ms] [34;1m[rows:0][0m CREATE INDEX `idx_references_issue_id` ON `references`(`issue_id`)
+
+2026/02/10 15:46:57 [32m/home/runner/work/playground/playground/internal/db/database.go:96
+[0m[33m[0.916ms] [34;1m[rows:0][0m CREATE INDEX `idx_references_user_id` ON `references`(`user_id`)
+2026/02/10 15:46:57 Database schema migrated successfully
+2026/02/10 15:46:57 Server starting on 0.0.0.0:8080...
+2026/02/10 15:46:57 WebSocket endpoint: ws://localhost:8080/ws
+2026/02/10 15:46:57 API endpoint: http://localhost:8080/api/v1
+2026/02/10 15:46:57 Server error: listen tcp 0.0.0.0:8080: bind: address already in use
