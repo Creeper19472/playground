@@ -316,7 +316,9 @@
                     
                     <div id="permissionsAdminTab" class="tab-content">
                         <h3 style="margin-bottom: 10px;">Permission Management</h3>
-                        <input type="text" id="newPermName" placeholder="Permission name (e.g., delete_user)">
+                        <input type="text" id="newPermName" placeholder="Permission name (e.g., edit_issues)">
+                        <input type="text" id="newPermResource" placeholder="Resource (e.g., issues, users)">
+                        <input type="text" id="newPermAction" placeholder="Action (e.g., create, read, update, delete)">
                         <input type="text" id="newPermDesc" placeholder="Description">
                         <button onclick="createPermission()">Create Permission</button>
                         <button class="secondary" onclick="loadPermissions()">Refresh Permissions</button>
@@ -879,10 +881,12 @@
         
         async function createPermission() {
             const name = document.getElementById('newPermName').value;
+            const resource = document.getElementById('newPermResource').value;
+            const action = document.getElementById('newPermAction').value;
             const description = document.getElementById('newPermDesc').value;
             
-            if (!name) {
-                alert('Please enter permission name');
+            if (!name || !resource || !action) {
+                alert('Please enter permission name, resource, and action');
                 return;
             }
             
@@ -893,12 +897,14 @@
                         'Content-Type': 'application/json',
                         'Authorization': 'Bearer ' + authToken
                     },
-                    body: JSON.stringify({ name, description, resource: name, action: 'access' })
+                    body: JSON.stringify({ name, description, resource, action })
                 });
                 
                 if (!response.ok) throw new Error('Failed to create permission');
                 
                 document.getElementById('newPermName').value = '';
+                document.getElementById('newPermResource').value = '';
+                document.getElementById('newPermAction').value = '';
                 document.getElementById('newPermDesc').value = '';
                 loadPermissions();
                 addEvent('Created permission: ' + name);
